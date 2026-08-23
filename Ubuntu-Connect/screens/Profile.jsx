@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   View,
   Text,
@@ -8,6 +7,9 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
+import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
 
 import { signOut } from "firebase/auth";
 import {

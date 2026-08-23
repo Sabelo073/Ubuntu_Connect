@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  SafeAreaViewBase,
 } from "react-native";
+import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
 
 import {
   collection,
@@ -17,17 +21,21 @@ import {
   onSnapshot,
   doc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebaseConfig";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [markingAll, setMarkingAll] = useState(false);
 
   useEffect(() => {
     const user = auth.currentUser;
 
     if (!user) {
+      setLoading(false);
       return;
     }
 
@@ -46,90 +54,244 @@ const Notifications = () => {
         }));
 
         setNotifications(notificationList);
+        setLoading(false);
       },
       (error) => {
         console.log("NOTIFICATIONS ERROR:", error.message);
+        setLoading(false);
+
+        Alert.alert(
+          "Notifications Error",
+          "Notifications could not be loaded. Check the Expo terminal for details."
+        );
       }
     );
 
     return () => unsubscribe();
   }, []);
 
-  const markAsRead = async (notificationId) => {
+  // Number of notifications that have not been read
+  const unreadCount = notifications.filter(
+    (item) => item.read === false
+  ).length;
+
+  // Only updates Firestore when the notification is unread
+  const markAsRead = async (notification) => {
+    if (notification.read === true) {
+      return;
+    }
+
     try {
-      await updateDoc(doc(db, "notifications", notificationId), {
-        read: true,
-      });
+      await updateDoc(
+        doc(db, "notifications", notification.id),
+        {
+          read: true,
+        }
+      );
     } catch (error) {
       Alert.alert("Notification Error", error.message);
     }
   };
 
+  // Marks every unread notification as read in one batch
   const markAllAsRead = async () => {
-    try {
-      const unreadNotifications = notifications.filter(
-        (item) => item.read === false
-      );
+    const unreadNotifications = notifications.filter(
+      (item) => item.read === false
+    );
 
-      for (const item of unreadNotifications) {
-        await updateDoc(doc(db, "notifications", item.id), {
+    if (unreadNotifications.length === 0) {
+      return;
+    }
+
+    try {
+      setMarkingAll(true);
+
+      const batch = writeBatch(db);
+
+      unreadNotifications.forEach((notification) => {
+        const notificationReference = doc(
+          db,
+          "notifications",
+          notification.id
+        );
+
+        batch.update(notificationReference, {
           read: true,
         });
-      }
+      });
+
+      await batch.commit();
     } catch (error) {
       Alert.alert("Notification Error", error.message);
+    } finally {
+      setMarkingAll(false);
     }
   };
 
   const getIcon = (type) => {
-    if (type === "donation") {
-      return "🎁";
-    }
+    switch (type) {
+      case "donation":
+        return "🎁";
 
-    if (type === "request") {
-      return "🙏";
-    }
+      case "request":
+        return "🙏";
 
-    return "🔔";
+      case "campaign":
+        return "📢";
+
+      case "message":
+        return "💬";
+
+      case "account":
+        return "👤";
+
+      default:
+        return "🔔";
+    }
   };
+
+  const getIconBackground = (type) => {
+    switch (type) {
+      case "donation":
+        return "#DCFCE7";
+
+      case "request":
+        return "#DBEAFE";
+
+      case "campaign":
+        return "#FEF3C7";
+
+      case "message":
+        return "#F3E8FF";
+
+      case "account":
+        return "#E2E8F0";
+
+      default:
+        return "#EFF6FF";
+    }
+  };
+
+  const formatNotificationTime = (createdAt) => {
+    if (!createdAt) {
+      return "Recently";
+    }
+
+    const date =
+      typeof createdAt.toDate === "function"
+        ? createdAt.toDate()
+        : new Date(createdAt);
+
+    if (Number.isNaN(date.getTime())) {
+      return "Recently";
+    }
+
+    const now = new Date();
+    const difference = now.getTime() - date.getTime();
+
+    const minutes = Math.floor(difference / 60000);
+    const hours = Math.floor(difference / 3600000);
+    const days = Math.floor(difference / 86400000);
+
+    if (minutes < 1) {
+      return "Just now";
+    }
+
+    if (minutes < 60) {
+      return `${minutes} min ago`;
+    }
+
+    if (hours < 24) {
+      return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+    }
+
+    if (days < 7) {
+      return `${days} ${days === 1 ? "day" : "days"} ago`;
+    }
+
+    return date.toLocaleDateString();
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563EB" />
+
+        <Text style={styles.loadingText}>
+          Loading notifications...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-
         <View style={styles.header}>
-          <Text style={styles.heading}>Notifications</Text>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.heading}>Notifications</Text>
 
-          {notifications.length > 0 && (
-            <TouchableOpacity onPress={markAllAsRead}>
-              <Text style={styles.markAll}>Mark All Read</Text>
+            <Text style={styles.headerSubtitle}>
+              {unreadCount > 0
+                ? `${unreadCount} unread ${
+                    unreadCount === 1
+                      ? "notification"
+                      : "notifications"
+                  }`
+                : "You're all caught up"}
+            </Text>
+          </View>
+
+          {unreadCount > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.markAllButton,
+                markingAll && styles.disabledButton,
+              ]}
+              onPress={markAllAsRead}
+              disabled={markingAll}
+            >
+              <Text style={styles.markAll}>
+                {markingAll ? "Updating..." : "Mark all read"}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
 
         {notifications.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🔔</Text>
+            <View style={styles.emptyIconContainer}>
+              <Text style={styles.emptyIcon}>🔔</Text>
+            </View>
 
             <Text style={styles.emptyTitle}>
               No Notifications Yet
             </Text>
 
             <Text style={styles.emptyText}>
-              Updates about your donations, requests, and account activity will appear here.
+              Updates about your donations, help requests, and account
+              activity will appear here.
             </Text>
           </View>
         ) : (
           notifications.map((item) => (
             <TouchableOpacity
               key={item.id}
+              activeOpacity={0.8}
               style={[
                 styles.notificationCard,
                 item.read === false && styles.unreadCard,
               ]}
-              onPress={() => markAsRead(item.id)}
+              onPress={() => markAsRead(item)}
             >
-              <View style={styles.iconContainer}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  {
+                    backgroundColor: getIconBackground(item.type),
+                  },
+                ]}
+              >
                 <Text style={styles.icon}>
                   {getIcon(item.type)}
                 </Text>
@@ -137,8 +299,13 @@ const Notifications = () => {
 
               <View style={styles.content}>
                 <View style={styles.titleRow}>
-                  <Text style={styles.title}>
-                    {item.title}
+                  <Text
+                    style={[
+                      styles.title,
+                      item.read === false && styles.unreadTitle,
+                    ]}
+                  >
+                    {item.title || "Ubuntu Connect Update"}
                   </Text>
 
                   {item.read === false && (
@@ -147,21 +314,29 @@ const Notifications = () => {
                 </View>
 
                 <Text style={styles.message}>
-                  {item.message}
+                  {item.message || "You have a new update."}
                 </Text>
 
-                <Text style={styles.time}>
-                  {item.createdAt?.toDate
-                    ? item.createdAt.toDate().toLocaleString()
-                    : "Recently"}
-                </Text>
+                <View style={styles.notificationFooter}>
+                  <Text style={styles.time}>
+                    {formatNotificationTime(item.createdAt)}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.readStatus,
+                      item.read === false && styles.unreadStatus,
+                    ]}
+                  >
+                    {item.read === false ? "Unread" : "Read"}
+                  </Text>
+                </View>
               </View>
             </TouchableOpacity>
           ))
         )}
 
         <View style={{ height: 100 }} />
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -176,6 +351,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    color: "#64748B",
+    fontSize: 15,
+    fontWeight: "600",
+    marginTop: 14,
+  },
+
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -184,15 +373,38 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
 
+  headerTextContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+
   heading: {
     fontSize: 28,
-    fontWeight: "bold",
+    fontWeight: "800",
     color: "#1E293B",
+  },
+
+  headerSubtitle: {
+    color: "#64748B",
+    fontSize: 13,
+    marginTop: 5,
+  },
+
+  markAllButton: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+
+  disabledButton: {
+    opacity: 0.6,
   },
 
   markAll: {
     color: "#2563EB",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 12,
   },
 
   notificationCard: {
@@ -201,8 +413,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 20,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
 
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -213,6 +427,7 @@ const styles = StyleSheet.create({
   },
 
   unreadCard: {
+    backgroundColor: "#F8FFFB",
     borderLeftWidth: 4,
     borderLeftColor: "#22C55E",
   },
@@ -221,7 +436,6 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
     borderRadius: 16,
-    backgroundColor: "#EFF6FF",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 15,
@@ -243,10 +457,15 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontWeight: "600",
+    color: "#334155",
     flex: 1,
     marginRight: 8,
+  },
+
+  unreadTitle: {
+    color: "#1E293B",
+    fontWeight: "800",
   },
 
   unreadDot: {
@@ -258,26 +477,51 @@ const styles = StyleSheet.create({
 
   message: {
     color: "#64748B",
-    marginTop: 5,
+    marginTop: 6,
     lineHeight: 20,
   },
 
+  notificationFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+  },
+
   time: {
-    marginTop: 8,
     color: "#94A3B8",
     fontSize: 12,
+  },
+
+  readStatus: {
+    color: "#94A3B8",
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  unreadStatus: {
+    color: "#16A34A",
   },
 
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 30,
-    marginTop: 100,
+    marginTop: 90,
+  },
+
+  emptyIconContainer: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
   },
 
   emptyIcon: {
-    fontSize: 70,
-    marginBottom: 20,
+    fontSize: 55,
   },
 
   emptyTitle: {

@@ -1,9 +1,16 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+
+import {
+  initializeAuth,
+  getReactNativePersistence,
+  getAuth,
+} from "firebase/auth";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyAvArbY33MtxRHK_Z2l4c-QFqeTCmg_sRk",
   authDomain: "ubuntu-connect-5a26f.firebaseapp.com",
@@ -16,6 +23,27 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+let auth;
+
+try {
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} catch (error) {
+  /*
+    Expo Fast Refresh may run this file again after Auth has
+    already been initialized. In that case, reuse the existing
+    Firebase Auth instance.
+  */
+  auth = getAuth(app);
+}
+
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+export {
+  app,
+  auth,
+  db,
+  storage,
+};

@@ -14,7 +14,7 @@ import Messages from "../screens/Messages";
 import Notifications from "../screens/Notifications";
 import AdminDashboard from "../screens/AdminDashboard";
 import MainTabs from "./MainTabs";
-
+import Chat from "../screens/Chat";
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
@@ -30,6 +30,13 @@ export default function AppNavigator() {
         <Stack.Screen name="Login" component={LogIn} />
         <Stack.Screen name="Register" component={Register} />
         <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen
+          name="Chat"
+          component={Chat}
+          options={{
+            headerShown: true,
+          }}
+        />
         <Stack.Screen name="Donate" component={Donate} />
         <Stack.Screen name="RequestHelp" component={RequestHelp} />
         <Stack.Screen name="Charities" component={Charities} />

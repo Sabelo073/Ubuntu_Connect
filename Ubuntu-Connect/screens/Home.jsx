@@ -3,11 +3,15 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
 
 import {
   collection,
@@ -15,13 +19,18 @@ import {
   orderBy,
   limit,
   onSnapshot,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 
-import { db } from "../firebaseConfig";
+import { auth, db } from "../firebaseConfig";
 
 const Home = ({ navigation }) => {
   const [donations, setDonations] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [startingChatId, setStartingChatId] = useState(null);
 
   useEffect(() => {
     const donationsQuery = query(
@@ -30,12 +39,18 @@ const Home = ({ navigation }) => {
       limit(5)
     );
 
+    const requestsQuery = query(
+      collection(db, "requests"),
+      orderBy("createdAt", "desc"),
+      limit(5)
+    );
+
     const unsubscribeDonations = onSnapshot(
       donationsQuery,
       (snapshot) => {
-        const donationList = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const donationList = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
         }));
 
         setDonations(donationList);
@@ -45,18 +60,12 @@ const Home = ({ navigation }) => {
       }
     );
 
-    const requestsQuery = query(
-      collection(db, "requests"),
-      orderBy("createdAt", "desc"),
-      limit(5)
-    );
-
     const unsubscribeRequests = onSnapshot(
       requestsQuery,
       (snapshot) => {
-        const requestList = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
+        const requestList = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
         }));
 
         setRequests(requestList);
@@ -72,40 +81,232 @@ const Home = ({ navigation }) => {
     };
   }, []);
 
+ const startHelpConversation = async (request) => {
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    Alert.alert(
+      "Login Required",
+      "Please log in before offering help."
+    );
+    return;
+  }
+
+  if (!request?.id || !request?.userId) {
+    Alert.alert(
+      "Chat Error",
+      "The request or request owner could not be found."
+    );
+    return;
+  }
+
+  if (request.userId === currentUser.uid) {
+    Alert.alert(
+      "Your Request",
+      "You cannot start a conversation with yourself."
+    );
+    return;
+  }
+
+  try {
+    setStartingChatId(request.id);
+
+    const currentUserReference = doc(
+      db,
+      "users",
+      currentUser.uid
+    );
+
+    const requestOwnerReference = doc(
+      db,
+      "users",
+      request.userId
+    );
+
+    const [
+      currentUserSnapshot,
+      requestOwnerSnapshot,
+    ] = await Promise.all([
+      getDoc(currentUserReference),
+      getDoc(requestOwnerReference),
+    ]);
+
+    if (!requestOwnerSnapshot.exists()) {
+      Alert.alert(
+        "Chat Error",
+        "The request owner's profile could not be found."
+      );
+      return;
+    }
+
+    const currentUserData = currentUserSnapshot.exists()
+      ? currentUserSnapshot.data()
+      : {};
+
+    const requestOwnerData =
+      requestOwnerSnapshot.data();
+
+    const currentUserName =
+      currentUserData.fullName ||
+      currentUser.displayName ||
+      currentUser.email ||
+      "Ubuntu Connect User";
+
+    const requestOwnerName =
+      requestOwnerData.fullName ||
+      requestOwnerData.email ||
+      "Ubuntu Connect User";
+
+    const participantIds = [
+      currentUser.uid,
+      request.userId,
+    ].sort();
+
+    const chatId =
+      `${participantIds.join("_")}_${request.id}`;
+
+    const chatReference = doc(
+      db,
+      "chats",
+      chatId
+    );
+
+    /*
+      No getDoc(chatReference) is needed here.
+
+      setDoc with merge creates a chat if it is new,
+      and safely reuses the chat if it already exists.
+    */
+    await setDoc(
+      chatReference,
+      {
+        participantIds,
+
+        participantNames: {
+          [currentUser.uid]: currentUserName,
+          [request.userId]: requestOwnerName,
+        },
+
+        requestId: request.id,
+        requestItem: request.itemNeeded || "",
+        requestCategory: request.category || "",
+
+        lastMessage: "",
+        lastMessageAt: serverTimestamp(),
+        lastSenderId: "",
+
+        unreadCounts: {
+          [currentUser.uid]: 0,
+          [request.userId]: 0,
+        },
+
+        createdAt: serverTimestamp(),
+      },
+      {
+        merge: true,
+      }
+    );
+
+    navigation.navigate("Chat", {
+      chatId,
+      otherUserId: request.userId,
+      otherUserName: requestOwnerName,
+    });
+  } catch (error) {
+    console.log(
+      "START CHAT ERROR CODE:",
+      error.code
+    );
+
+    console.log(
+      "START CHAT ERROR MESSAGE:",
+      error.message
+    );
+
+    Alert.alert(
+      "Chat Error",
+      `${error.code || "Unknown error"}\n\n${
+        error.message ||
+        "The conversation could not be started."
+      }`
+    );
+  } finally {
+    setStartingChatId(null);
+  }
+};
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "Approved":
+        return {
+          container: styles.approvedStatusBadge,
+          text: styles.approvedStatusText,
+        };
+
+      case "Rejected":
+        return {
+          container: styles.rejectedStatusBadge,
+          text: styles.rejectedStatusText,
+        };
+
+      default:
+        return {
+          container: styles.pendingStatusBadge,
+          text: styles.pendingStatusText,
+        };
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Good Evening 👋</Text>
-          <Text style={styles.name}>Sabelo</Text>
+          <Text style={styles.greeting}>Hello 👋</Text>
+          <Text style={styles.name}>Change Maker</Text>
         </View>
 
         {/* Impact Card */}
         <View style={styles.impactCard}>
-          <Text style={styles.cardTitle}>Community Activity</Text>
+          <Text style={styles.cardTitle}>
+            Community Activity
+          </Text>
 
           <View style={styles.statsContainer}>
             <View style={styles.stat}>
-              <Text style={styles.statNumber}>{donations.length}</Text>
-              <Text style={styles.statText}>Donations</Text>
+              <Text style={styles.statNumber}>
+                {donations.length}
+              </Text>
+
+              <Text style={styles.statText}>
+                Donations
+              </Text>
             </View>
 
             <View style={styles.stat}>
-              <Text style={styles.statNumber}>{requests.length}</Text>
-              <Text style={styles.statText}>Requests</Text>
+              <Text style={styles.statNumber}>
+                {requests.length}
+              </Text>
+
+              <Text style={styles.statText}>
+                Requests
+              </Text>
             </View>
 
             <View style={styles.stat}>
               <Text style={styles.statNumber}>12</Text>
-              <Text style={styles.statText}>Volunteer Hours</Text>
+
+              <Text style={styles.statText}>
+                Volunteer Hours
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={styles.sectionTitle}>
+          Quick Actions
+        </Text>
 
         <View style={styles.actionGrid}>
           <TouchableOpacity
@@ -142,7 +343,9 @@ const Home = ({ navigation }) => {
         </View>
 
         {/* Urgent Need */}
-        <Text style={styles.sectionTitle}>Urgent Needs</Text>
+        <Text style={styles.sectionTitle}>
+          Urgent Needs
+        </Text>
 
         <View style={styles.needCard}>
           <Text style={styles.needTitle}>
@@ -157,12 +360,16 @@ const Home = ({ navigation }) => {
             style={styles.donateBtn}
             onPress={() => navigation.navigate("Donate")}
           >
-            <Text style={styles.donateBtnText}>Donate Now</Text>
+            <Text style={styles.donateBtnText}>
+              Donate Now
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Recent Donations */}
-        <Text style={styles.sectionTitle}>Recent Donations</Text>
+        <Text style={styles.sectionTitle}>
+          Recent Donations
+        </Text>
 
         {donations.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -171,57 +378,81 @@ const Home = ({ navigation }) => {
             </Text>
           </View>
         ) : (
-          donations.map((donation) => (
-            <View key={donation.id} style={styles.donationCard}>
-              {donation.imageBase64 ? (
-                <Image
-                  source={{
-                    uri: `data:image/jpeg;base64,${donation.imageBase64}`,
-                  }}
-                  style={styles.donationImage}
-                />
-              ) : (
-                <View style={styles.noImageBox}>
-                  <Text style={styles.noImageText}>🎁 No image added</Text>
-                </View>
-              )}
+          donations.map((donation) => {
+            const statusStyle = getStatusStyle(
+              donation.status
+            );
 
-              <View style={styles.donationTopRow}>
-                <Text style={styles.donationTitle}>
-                  🎁 {donation.itemName}
+            return (
+              <View
+                key={donation.id}
+                style={styles.donationCard}
+              >
+                {donation.imageBase64 ? (
+                  <Image
+                    source={{
+                      uri: `data:image/jpeg;base64,${donation.imageBase64}`,
+                    }}
+                    style={styles.donationImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.noImageBox}>
+                    <Text style={styles.noImageText}>
+                      🎁 No image added
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.donationTopRow}>
+                  <Text style={styles.donationTitle}>
+                    🎁 {donation.itemName}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      statusStyle.container,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        statusStyle.text,
+                      ]}
+                    >
+                      {donation.status || "Pending"}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.donationCategory}>
+                  {donation.category} • {donation.condition}
                 </Text>
 
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>
-                    {donation.status}
-                  </Text>
-                </View>
+                <Text
+                  style={styles.donationDescription}
+                  numberOfLines={2}
+                >
+                  {donation.description}
+                </Text>
+
+                <Text style={styles.donationLocation}>
+                  📍 {donation.address}
+                </Text>
+
+                <Text style={styles.donationMethod}>
+                  Method: {donation.deliveryMethod}
+                </Text>
               </View>
-
-              <Text style={styles.donationCategory}>
-                {donation.category} • {donation.condition}
-              </Text>
-
-              <Text
-                style={styles.donationDescription}
-                numberOfLines={2}
-              >
-                {donation.description}
-              </Text>
-
-              <Text style={styles.donationLocation}>
-                📍 {donation.address}
-              </Text>
-
-              <Text style={styles.donationMethod}>
-                Method: {donation.deliveryMethod}
-              </Text>
-            </View>
-          ))
+            );
+          })
         )}
 
         {/* Recent Help Requests */}
-        <Text style={styles.sectionTitle}>Recent Help Requests</Text>
+        <Text style={styles.sectionTitle}>
+          Recent Help Requests
+        </Text>
 
         {requests.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -230,70 +461,163 @@ const Home = ({ navigation }) => {
             </Text>
           </View>
         ) : (
-          requests.map((request) => (
-            <View key={request.id} style={styles.requestCard}>
-              <View style={styles.requestTopRow}>
-                <Text style={styles.requestTitle}>
-                  🙏 {request.itemNeeded}
-                </Text>
+          requests.map((request) => {
+            const isOwnRequest =
+              request.userId === auth.currentUser?.uid;
 
-                <View
-                  style={[
-                    styles.requestBadge,
-                    request.urgency === "Urgent" && styles.urgentBadge,
-                  ]}
-                >
-                  <Text
+            const isStartingChat =
+              startingChatId === request.id;
+
+            const statusStyle = getStatusStyle(
+              request.status
+            );
+
+            return (
+              <View
+                key={request.id}
+                style={styles.requestCard}
+              >
+                <View style={styles.requestTopRow}>
+                  <Text style={styles.requestTitle}>
+                    🙏 {request.itemNeeded}
+                  </Text>
+
+                  <View
                     style={[
-                      styles.requestBadgeText,
-                      request.urgency === "Urgent" && styles.urgentBadgeText,
+                      styles.requestBadge,
+                      request.urgency === "Urgent" &&
+                        styles.urgentBadge,
                     ]}
                   >
-                    {request.urgency}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.requestBadgeText,
+                        request.urgency === "Urgent" &&
+                          styles.urgentBadgeText,
+                      ]}
+                    >
+                      {request.urgency || "Normal"}
+                    </Text>
+                  </View>
                 </View>
+
+                <Text style={styles.requestCategory}>
+                  {request.category} • Quantity:{" "}
+                  {request.quantity}
+                </Text>
+
+                <Text
+                  style={styles.requestDescription}
+                  numberOfLines={2}
+                >
+                  {request.description}
+                </Text>
+
+                <Text style={styles.requestLocation}>
+                  📍 {request.location}
+                </Text>
+
+                <View style={styles.requestStatusRow}>
+                  <Text style={styles.requestStatusLabel}>
+                    Status:
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      statusStyle.container,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        statusStyle.text,
+                      ]}
+                    >
+                      {request.status || "Pending"}
+                    </Text>
+                  </View>
+                </View>
+
+                {isOwnRequest ? (
+                  <View style={styles.ownRequestNotice}>
+                    <Text style={styles.ownRequestNoticeText}>
+                      This is your help request
+                    </Text>
+                  </View>
+                ) : request.status !== "Rejected" ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.offerHelpButton,
+                      isStartingChat &&
+                        styles.disabledButton,
+                    ]}
+                    onPress={() =>
+                      startHelpConversation(request)
+                    }
+                    disabled={isStartingChat}
+                  >
+                    {isStartingChat ? (
+                      <View style={styles.loadingButtonContent}>
+                        <ActivityIndicator
+                          size="small"
+                          color="#FFFFFF"
+                        />
+
+                        <Text
+                          style={styles.offerHelpButtonText}
+                        >
+                          Starting Chat...
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.offerHelpButtonText}>
+                        💬 Offer Help
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.rejectedNotice}>
+                    <Text style={styles.rejectedNoticeText}>
+                      This request is no longer available
+                    </Text>
+                  </View>
+                )}
               </View>
-
-              <Text style={styles.requestCategory}>
-                {request.category} • Quantity: {request.quantity}
-              </Text>
-
-              <Text
-                style={styles.requestDescription}
-                numberOfLines={2}
-              >
-                {request.description}
-              </Text>
-
-              <Text style={styles.requestLocation}>
-                📍 {request.location}
-              </Text>
-
-              <Text style={styles.requestStatus}>
-                Status: {request.status}
-              </Text>
-            </View>
-          ))
+            );
+          })
         )}
 
         {/* Nearby Charities */}
-        <Text style={styles.sectionTitle}>Nearby Charities</Text>
+        <Text style={styles.sectionTitle}>
+          Nearby Charities
+        </Text>
 
-        <View style={styles.charityCard}>
+        <TouchableOpacity
+          style={styles.charityCard}
+          onPress={() => navigation.navigate("Charities")}
+        >
           <Text style={styles.charityName}>
             Ubuntu Community Center
           </Text>
+
           <Text style={styles.charityAddress}>
             2.5 km away
           </Text>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.charityCard}>
-          <Text style={styles.charityName}>Hope Foundation</Text>
+        <TouchableOpacity
+          style={styles.charityCard}
+          onPress={() => navigation.navigate("Charities")}
+        >
+          <Text style={styles.charityName}>
+            Hope Foundation
+          </Text>
+
           <Text style={styles.charityAddress}>
             4.1 km away
           </Text>
-        </View>
+        </TouchableOpacity>
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -388,8 +712,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     marginBottom: 12,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.05,
     shadowRadius: 5,
     elevation: 3,
@@ -443,8 +766,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 18,
     marginBottom: 12,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 3,
@@ -511,16 +833,38 @@ const styles = StyleSheet.create({
   },
 
   statusBadge: {
-    backgroundColor: "#DCFCE7",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
   },
 
   statusText: {
-    color: "#16A34A",
     fontSize: 12,
     fontWeight: "700",
+  },
+
+  pendingStatusBadge: {
+    backgroundColor: "#FEF3C7",
+  },
+
+  pendingStatusText: {
+    color: "#D97706",
+  },
+
+  approvedStatusBadge: {
+    backgroundColor: "#DCFCE7",
+  },
+
+  approvedStatusText: {
+    color: "#16A34A",
+  },
+
+  rejectedStatusBadge: {
+    backgroundColor: "#FEE2E2",
+  },
+
+  rejectedStatusText: {
+    color: "#DC2626",
   },
 
   requestCard: {
@@ -529,8 +873,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 18,
     marginBottom: 12,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 3,
@@ -567,12 +910,19 @@ const styles = StyleSheet.create({
 
   requestLocation: {
     color: "#475569",
-    marginBottom: 4,
+    marginBottom: 8,
   },
 
-  requestStatus: {
+  requestStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 3,
+  },
+
+  requestStatusLabel: {
     color: "#64748B",
     fontSize: 13,
+    marginRight: 8,
   },
 
   requestBadge: {
@@ -594,6 +944,59 @@ const styles = StyleSheet.create({
 
   urgentBadgeText: {
     color: "#DC2626",
+  },
+
+  offerHelpButton: {
+    backgroundColor: "#22C55E",
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: "center",
+    marginTop: 15,
+  },
+
+  offerHelpButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  disabledButton: {
+    opacity: 0.65,
+  },
+
+  loadingButtonContent: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  ownRequestNotice: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+    marginTop: 15,
+  },
+
+  ownRequestNoticeText: {
+    color: "#2563EB",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+
+  rejectedNotice: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: "center",
+    marginTop: 15,
+  },
+
+  rejectedNoticeText: {
+    color: "#DC2626",
+    fontWeight: "600",
+    fontSize: 13,
   },
 
   emptyCard: {
