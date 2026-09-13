@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
-import {
-  SafeAreaView,
-} from "react-native-safe-area-context";
+
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import { signOut } from "firebase/auth";
+
 import {
   collection,
   query,
@@ -22,6 +25,7 @@ import {
   addDoc,
   doc,
   getDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebaseConfig";
@@ -30,9 +34,30 @@ const AdminDashboard = ({ navigation }) => {
   const [adminData, setAdminData] = useState(null);
   const [donations, setDonations] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [charities, setCharities] = useState([]);
   const [usersCount, setUsersCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const [processingId, setProcessingId] = useState(null);
+
+  /*
+    Displays a message on Web, Android, and iOS.
+  */
+  const showMessage = (title, message) => {
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined"
+    ) {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  /*
+    Checks whether the logged-in user is an admin.
+  */
   useEffect(() => {
     const user = auth.currentUser;
 
@@ -43,38 +68,67 @@ const AdminDashboard = ({ navigation }) => {
 
     const checkAdminAccess = async () => {
       try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userReference = doc(
+          db,
+          "users",
+          user.uid
+        );
 
-        if (!userDoc.exists()) {
-          Alert.alert("Access Denied", "User profile not found.");
+        const userSnapshot = await getDoc(
+          userReference
+        );
+
+        if (!userSnapshot.exists()) {
+          showMessage(
+            "Access Denied",
+            "Your user profile could not be found."
+          );
+
           navigation.replace("Login");
           return;
         }
 
-        const userData = userDoc.data();
+        const userData = userSnapshot.data();
+        const userRole = userData.role?.trim();
 
-        if (userData.role !== "Admin") {
-          Alert.alert(
+        if (userRole !== "Admin") {
+          showMessage(
             "Access Denied",
-            "Only admins can access this dashboard."
+            "Only administrators can access this dashboard."
           );
+
           navigation.replace("MainTabs");
           return;
         }
 
         setAdminData(userData);
-        setLoading(false);
       } catch (error) {
-        Alert.alert("Admin Error", error.message);
+        console.log(
+          "ADMIN ACCESS ERROR:",
+          error.code,
+          error.message
+        );
+
+        showMessage(
+          "Admin Error",
+          error.message ||
+            "Administrator access could not be checked."
+        );
+
         navigation.replace("MainTabs");
+      } finally {
+        setLoading(false);
       }
     };
 
     checkAdminAccess();
-  }, []);
+  }, [navigation]);
 
+  /*
+    Loads donations, requests, and user count.
+  */
   useEffect(() => {
-    if (loading) {
+    if (loading || !adminData) {
       return;
     }
 
@@ -84,81 +138,204 @@ const AdminDashboard = ({ navigation }) => {
       limit(20)
     );
 
-    const unsubscribeDonations = onSnapshot(
-      donationsQuery,
-      (snapshot) => {
-        const donationList = snapshot.docs.map((document) => ({
-          id: document.id,
-          ...document.data(),
-        }));
-
-        setDonations(donationList);
-      },
-      (error) => {
-        console.log("ADMIN DONATIONS ERROR:", error.message);
-      }
-    );
-
     const requestsQuery = query(
       collection(db, "requests"),
       orderBy("createdAt", "desc"),
       limit(20)
     );
 
+    const campaignsQuery = query(
+  collection(db, "campaigns"),
+  orderBy("createdAt", "desc"),
+  limit(20)
+);
+const charitiesQuery = query(
+  collection(db, "charities"),
+  orderBy("createdAt", "desc"),
+  limit(20)
+);
+
+    const unsubscribeDonations = onSnapshot(
+      donationsQuery,
+      (snapshot) => {
+        const donationList = snapshot.docs.map(
+          (document) => ({
+            id: document.id,
+            ...document.data(),
+          })
+        );
+
+        setDonations(donationList);
+      },
+      (error) => {
+        console.log(
+          "ADMIN DONATIONS ERROR:",
+          error.code,
+          error.message
+        );
+      }
+    );
+
     const unsubscribeRequests = onSnapshot(
       requestsQuery,
       (snapshot) => {
-        const requestList = snapshot.docs.map((document) => ({
-          id: document.id,
-          ...document.data(),
-        }));
+        const requestList = snapshot.docs.map(
+          (document) => ({
+            id: document.id,
+            ...document.data(),
+          })
+        );
 
         setRequests(requestList);
       },
       (error) => {
-        console.log("ADMIN REQUESTS ERROR:", error.message);
+        console.log(
+          "ADMIN REQUESTS ERROR:",
+          error.code,
+          error.message
+        );
       }
     );
 
-    const usersQuery = collection(db, "users");
+    const unsubscribeCampaigns = onSnapshot(
+  campaignsQuery,
+  (snapshot) => {
+    const campaignList = snapshot.docs.map(
+      (document) => ({
+        id: document.id,
+        ...document.data(),
+      })
+    );
+
+    setCampaigns(campaignList);
+  },
+  (error) => {
+    console.log(
+      "ADMIN CAMPAIGNS ERROR:",
+      error.code,
+      error.message
+    );
+  }
+);
+
+const unsubscribeCharities = onSnapshot(
+  charitiesQuery,
+  (snapshot) => {
+    const charityList = snapshot.docs.map(
+      (document) => ({
+        id: document.id,
+        ...document.data(),
+      })
+    );
+
+    setCharities(charityList);
+  },
+  (error) => {
+    console.log(
+      "ADMIN CHARITIES ERROR:",
+      error.code,
+      error.message
+    );
+  }
+);
 
     const unsubscribeUsers = onSnapshot(
-      usersQuery,
+      collection(db, "users"),
       (snapshot) => {
         setUsersCount(snapshot.size);
       },
       (error) => {
-        console.log("ADMIN USERS ERROR:", error.message);
+        console.log(
+          "ADMIN USERS ERROR:",
+          error.code,
+          error.message
+        );
       }
     );
 
-    return () => {
-      unsubscribeDonations();
-      unsubscribeRequests();
-      unsubscribeUsers();
-    };
-  }, [loading]);
+  return () => {
+  unsubscribeDonations();
+  unsubscribeRequests();
+  unsubscribeCampaigns();
+  unsubscribeCharities();
+  unsubscribeUsers();
+};
+  }, [loading, adminData]);
 
-  const createNotification = async (userId, title, message, type) => {
+  /*
+    Creates a notification for the owner.
+  */
+  const createNotification = async (
+    userId,
+    title,
+    message,
+    type
+  ) => {
+    if (!userId) {
+      console.log(
+        "NOTIFICATION SKIPPED: User ID is missing."
+      );
+      return;
+    }
+
     try {
-      await addDoc(collection(db, "notifications"), {
-        userId: userId,
-        title: title,
-        message: message,
-        type: type,
-        read: false,
-        createdAt: new Date(),
-      });
+      await addDoc(
+        collection(db, "notifications"),
+        {
+          userId,
+          title,
+          message,
+          type,
+          read: false,
+          createdAt: serverTimestamp(),
+        }
+      );
     } catch (error) {
-      console.log("NOTIFICATION ERROR:", error.message);
+      console.log(
+        "NOTIFICATION ERROR:",
+        error.code,
+        error.message
+      );
+
+      /*
+        The status update should still succeed even
+        when notification creation fails.
+      */
     }
   };
 
-  const updateDonationStatus = async (donation, newStatus) => {
+  /*
+    Approves or rejects a donation.
+  */
+  const updateDonationStatus = async (
+    donation,
+    newStatus
+  ) => {
+    if (!donation?.id) {
+      showMessage(
+        "Update Error",
+        "The donation ID could not be found."
+      );
+      return;
+    }
+
     try {
-      await updateDoc(doc(db, "donations", donation.id), {
-        status: newStatus,
-      });
+      setProcessingId(donation.id);
+
+      console.log(
+        "UPDATING DONATION:",
+        donation.id,
+        newStatus
+      );
+
+      await updateDoc(
+        doc(db, "donations", donation.id),
+        {
+          status: newStatus,
+          reviewedAt: serverTimestamp(),
+          reviewedBy: auth.currentUser?.uid || "",
+        }
+      );
 
       await createNotification(
         donation.userId,
@@ -167,20 +344,61 @@ const AdminDashboard = ({ navigation }) => {
         "donation"
       );
 
-      Alert.alert(
+      showMessage(
         "Success",
         `Donation ${newStatus.toLowerCase()} successfully.`
       );
     } catch (error) {
-      Alert.alert("Update Error", error.message);
+      console.log(
+        "DONATION UPDATE ERROR:",
+        error.code,
+        error.message
+      );
+
+      showMessage(
+        "Update Error",
+        `${error.code || "Unknown error"}\n\n${
+          error.message ||
+          "The donation could not be updated."
+        }`
+      );
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  const updateRequestStatus = async (request, newStatus) => {
+  /*
+    Approves or rejects a help request.
+  */
+  const updateRequestStatus = async (
+    request,
+    newStatus
+  ) => {
+    if (!request?.id) {
+      showMessage(
+        "Update Error",
+        "The request ID could not be found."
+      );
+      return;
+    }
+
     try {
-      await updateDoc(doc(db, "requests", request.id), {
-        status: newStatus,
-      });
+      setProcessingId(request.id);
+
+      console.log(
+        "UPDATING REQUEST:",
+        request.id,
+        newStatus
+      );
+
+      await updateDoc(
+        doc(db, "requests", request.id),
+        {
+          status: newStatus,
+          reviewedAt: serverTimestamp(),
+          reviewedBy: auth.currentUser?.uid || "",
+        }
+      );
 
       await createNotification(
         request.userId,
@@ -189,16 +407,105 @@ const AdminDashboard = ({ navigation }) => {
         "request"
       );
 
-      Alert.alert(
+      showMessage(
         "Success",
         `Request ${newStatus.toLowerCase()} successfully.`
       );
     } catch (error) {
-      Alert.alert("Update Error", error.message);
+      console.log(
+        "REQUEST UPDATE ERROR:",
+        error.code,
+        error.message
+      );
+
+      showMessage(
+        "Update Error",
+        `${error.code || "Unknown error"}\n\n${
+          error.message ||
+          "The request could not be updated."
+        }`
+      );
+    } finally {
+      setProcessingId(null);
     }
   };
 
+  /*
+    Performs the actual donation deletion.
+  */
+  const performDonationDelete = async (
+    donation
+  ) => {
+    if (!donation?.id) {
+      showMessage(
+        "Delete Error",
+        "The donation ID could not be found."
+      );
+      return;
+    }
+
+    try {
+      setProcessingId(donation.id);
+
+      console.log(
+        "DELETING DONATION:",
+        donation.id
+      );
+
+      await createNotification(
+        donation.userId,
+        "Donation Deleted",
+        `Your donation "${donation.itemName}" was deleted by an administrator.`,
+        "donation"
+      );
+
+      await deleteDoc(
+        doc(db, "donations", donation.id)
+      );
+
+      showMessage(
+        "Deleted",
+        "Donation deleted successfully."
+      );
+    } catch (error) {
+      console.log(
+        "DONATION DELETE ERROR:",
+        error.code,
+        error.message
+      );
+
+      showMessage(
+        "Delete Error",
+        `${error.code || "Unknown error"}\n\n${
+          error.message ||
+          "The donation could not be deleted."
+        }`
+      );
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  /*
+    Uses window.confirm on Web and Alert.alert
+    on Android and iOS.
+  */
   const deleteDonation = (donation) => {
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined"
+    ) {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${donation.itemName}"?`
+      );
+
+      if (confirmed) {
+        performDonationDelete(donation);
+      }
+
+      return;
+    }
+
     Alert.alert(
       "Delete Donation",
       "Are you sure you want to delete this donation?",
@@ -210,28 +517,85 @@ const AdminDashboard = ({ navigation }) => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: async () => {
-            try {
-              await createNotification(
-                donation.userId,
-                "Donation Deleted",
-                `Your donation "${donation.itemName}" was deleted by an admin.`,
-                "donation"
-              );
-
-              await deleteDoc(doc(db, "donations", donation.id));
-
-              Alert.alert("Deleted", "Donation deleted successfully.");
-            } catch (error) {
-              Alert.alert("Delete Error", error.message);
-            }
-          },
+          onPress: () =>
+            performDonationDelete(donation),
         },
       ]
     );
   };
 
+  /*
+    Performs the actual request deletion.
+  */
+  const performRequestDelete = async (
+    request
+  ) => {
+    if (!request?.id) {
+      showMessage(
+        "Delete Error",
+        "The request ID could not be found."
+      );
+      return;
+    }
+
+    try {
+      setProcessingId(request.id);
+
+      console.log(
+        "DELETING REQUEST:",
+        request.id
+      );
+
+      await createNotification(
+        request.userId,
+        "Request Deleted",
+        `Your request for "${request.itemNeeded}" was deleted by an administrator.`,
+        "request"
+      );
+
+      await deleteDoc(
+        doc(db, "requests", request.id)
+      );
+
+      showMessage(
+        "Deleted",
+        "Request deleted successfully."
+      );
+    } catch (error) {
+      console.log(
+        "REQUEST DELETE ERROR:",
+        error.code,
+        error.message
+      );
+
+      showMessage(
+        "Delete Error",
+        `${error.code || "Unknown error"}\n\n${
+          error.message ||
+          "The request could not be deleted."
+        }`
+      );
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const deleteRequest = (request) => {
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined"
+    ) {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete the request for "${request.itemNeeded}"?`
+      );
+
+      if (confirmed) {
+        performRequestDelete(request);
+      }
+
+      return;
+    }
+
     Alert.alert(
       "Delete Request",
       "Are you sure you want to delete this help request?",
@@ -243,53 +607,431 @@ const AdminDashboard = ({ navigation }) => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: async () => {
-            try {
-              await createNotification(
-                request.userId,
-                "Request Deleted",
-                `Your request for "${request.itemNeeded}" was deleted by an admin.`,
-                "request"
-              );
-
-              await deleteDoc(doc(db, "requests", request.id));
-
-              Alert.alert("Deleted", "Request deleted successfully.");
-            } catch (error) {
-              Alert.alert("Delete Error", error.message);
-            }
-          },
+          onPress: () =>
+            performRequestDelete(request),
         },
       ]
     );
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigation.replace("Login");
-    } catch (error) {
-      Alert.alert("Logout Error", error.message);
+  const updateCampaignStatus = async (
+  campaign,
+  newStatus
+) => {
+  if (!campaign?.id) {
+    showMessage(
+      "Campaign Error",
+      "The campaign ID could not be found."
+    );
+    return;
+  }
+
+  try {
+    setProcessingId(campaign.id);
+
+    await updateDoc(
+      doc(db, "campaigns", campaign.id),
+      {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+        updatedBy: auth.currentUser?.uid || "",
+      }
+    );
+
+    showMessage(
+      "Campaign Updated",
+      `"${campaign.title}" is now ${newStatus}.`
+    );
+  } catch (error) {
+    console.log(
+      "CAMPAIGN UPDATE ERROR:",
+      error.code,
+      error.message
+    );
+
+    showMessage(
+      "Campaign Error",
+      error.message ||
+        "The campaign could not be updated."
+    );
+  } finally {
+    setProcessingId(null);
+  }
+};
+
+const performCampaignDelete = async (
+  campaign
+) => {
+  try {
+    setProcessingId(campaign.id);
+
+    await deleteDoc(
+      doc(db, "campaigns", campaign.id)
+    );
+
+    showMessage(
+      "Campaign Deleted",
+      `"${campaign.title}" was deleted successfully.`
+    );
+  } catch (error) {
+    console.log(
+      "CAMPAIGN DELETE ERROR:",
+      error.code,
+      error.message
+    );
+
+    showMessage(
+      "Delete Error",
+      error.message ||
+        "The campaign could not be deleted."
+    );
+  } finally {
+    setProcessingId(null);
+  }
+};
+
+const deleteCampaign = (campaign) => {
+  if (!campaign?.id) {
+    showMessage(
+      "Delete Error",
+      "The campaign ID could not be found."
+    );
+    return;
+  }
+
+  if (
+    Platform.OS === "web" &&
+    typeof window !== "undefined"
+  ) {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${campaign.title}"?`
+    );
+
+    if (confirmed) {
+      performCampaignDelete(campaign);
     }
+
+    return;
+  }
+
+  Alert.alert(
+    "Delete Campaign",
+    `Are you sure you want to delete "${campaign.title}"?`,
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          performCampaignDelete(campaign),
+      },
+    ]
+  );
+};
+
+const getCampaignProgress = (campaign) => {
+  if (campaign.campaignType === "Money") {
+    const target = Number(
+      campaign.targetAmount || 0
+    );
+
+    const current = Number(
+      campaign.currentAmount || 0
+    );
+
+    return {
+      goal: `R${target.toLocaleString()}`,
+      progress: `R${current.toLocaleString()} raised`,
+      percentage:
+        target > 0
+          ? Math.min((current / target) * 100, 100)
+          : 0,
+    };
+  }
+
+  const target = Number(
+    campaign.targetItems || 0
+  );
+
+  const current = Number(
+    campaign.collectedItems || 0
+  );
+
+  return {
+    goal: `${target} ${
+      campaign.itemName || "items"
+    }`,
+
+    progress: `${current} collected`,
+
+    percentage:
+      target > 0
+        ? Math.min((current / target) * 100, 100)
+        : 0,
   };
+};
+
+const getCampaignStatusStyle = (status) => {
+  if (status === "Completed") {
+    return {
+      badge: styles.campaignCompletedBadge,
+      text: styles.campaignCompletedText,
+    };
+  }
+
+  if (status === "Closed") {
+    return {
+      badge: styles.campaignClosedBadge,
+      text: styles.campaignClosedText,
+    };
+  }
+
+  return {
+    badge: styles.campaignActiveBadge,
+    text: styles.campaignActiveText,
+  };
+};
+const updateCharityVerification = async (
+  charity,
+  verified
+) => {
+  if (!charity?.id) {
+    showMessage(
+      "Charity Error",
+      "The charity ID could not be found."
+    );
+    return;
+  }
+
+  try {
+    setProcessingId(charity.id);
+
+    await updateDoc(
+      doc(db, "charities", charity.id),
+      {
+        verified,
+        updatedAt: serverTimestamp(),
+        updatedBy: auth.currentUser?.uid || "",
+      }
+    );
+
+    showMessage(
+      "Charity Updated",
+      verified
+        ? `"${charity.name}" is now verified.`
+        : `"${charity.name}" is now unverified.`
+    );
+  } catch (error) {
+    console.log(
+      "CHARITY UPDATE ERROR:",
+      error.code,
+      error.message
+    );
+
+    showMessage(
+      "Charity Error",
+      error.message ||
+        "The charity could not be updated."
+    );
+  } finally {
+    setProcessingId(null);
+  }
+};
+const performCharityDelete = async (
+  charity
+) => {
+  if (!charity?.id) {
+    showMessage(
+      "Delete Error",
+      "The charity ID could not be found."
+    );
+    return;
+  }
+
+  try {
+    setProcessingId(charity.id);
+
+    await deleteDoc(
+      doc(db, "charities", charity.id)
+    );
+
+    showMessage(
+      "Charity Deleted",
+      `"${charity.name}" was deleted successfully.`
+    );
+  } catch (error) {
+    console.log(
+      "CHARITY DELETE ERROR:",
+      error.code,
+      error.message
+    );
+
+    showMessage(
+      "Delete Error",
+      error.message ||
+        "The charity could not be deleted."
+    );
+  } finally {
+    setProcessingId(null);
+  }
+};
+
+const deleteCharity = (charity) => {
+  if (!charity?.id) {
+    showMessage(
+      "Delete Error",
+      "The charity ID could not be found."
+    );
+    return;
+  }
+
+  if (
+    Platform.OS === "web" &&
+    typeof window !== "undefined"
+  ) {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${charity.name}"?`
+    );
+
+    if (confirmed) {
+      performCharityDelete(charity);
+    }
+
+    return;
+  }
+
+  Alert.alert(
+    "Delete Charity",
+    `Are you sure you want to delete "${charity.name}"?`,
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          performCharityDelete(charity),
+      },
+    ]
+  );
+};
+
+  const handleLogout = async () => {
+    const logout = async () => {
+      try {
+        await signOut(auth);
+        navigation.replace("Login");
+      } catch (error) {
+        showMessage(
+          "Logout Error",
+          error.message ||
+            "You could not be logged out."
+        );
+      }
+    };
+
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined"
+    ) {
+      const confirmed = window.confirm(
+        "Are you sure you want to log out?"
+      );
+
+      if (confirmed) {
+        logout();
+      }
+
+      return;
+    }
+
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to log out?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Logout",
+          onPress: logout,
+        },
+      ]
+    );
+  };
+
+  const getStatusStyles = (status) => {
+    if (status === "Approved") {
+      return {
+        badge: styles.approvedBadge,
+        text: styles.approvedText,
+      };
+    }
+
+    if (status === "Rejected") {
+      return {
+        badge: styles.rejectedBadge,
+        text: styles.rejectedText,
+      };
+    }
+
+    return {
+      badge: styles.pendingBadge,
+      text: styles.pendingText,
+    };
+  };
+
+  const pendingCount =
+    donations.filter(
+      (item) => item.status === "Pending"
+    ).length +
+    requests.filter(
+      (item) => item.status === "Pending"
+    ).length;
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Checking admin access...</Text>
+      <SafeAreaView
+        style={styles.loadingContainer}
+      >
+        <ActivityIndicator
+          size="large"
+          color="#2563EB"
+        />
+
+        <Text style={styles.loadingText}>
+          Checking admin access...
+        </Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-
+    <SafeAreaView
+      style={styles.container}
+      edges={["top", "left", "right"]}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
-          <View>
-            <Text style={styles.welcome}>Welcome Admin 👋</Text>
-            <Text style={styles.adminName}>
-              {adminData?.fullName || "Administrator"}
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.welcome}>
+              Welcome Admin 👋
+            </Text>
+
+            <Text
+              style={styles.adminName}
+              numberOfLines={1}
+            >
+              {adminData?.fullName ||
+                "Administrator"}
             </Text>
           </View>
 
@@ -297,183 +1039,770 @@ const AdminDashboard = ({ navigation }) => {
             style={styles.logoutButtonSmall}
             onPress={handleLogout}
           >
-            <Text style={styles.logoutButtonSmallText}>Logout</Text>
+            <Text
+              style={styles.logoutButtonSmallText}
+            >
+              Logout
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statIcon}>👥</Text>
-            <Text style={styles.statValue}>{usersCount}</Text>
-            <Text style={styles.statLabel}>Users</Text>
+            <Text style={styles.statValue}>
+              {usersCount}
+            </Text>
+            <Text style={styles.statLabel}>
+              Users
+            </Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statIcon}>🎁</Text>
-            <Text style={styles.statValue}>{donations.length}</Text>
-            <Text style={styles.statLabel}>Donations</Text>
+            <Text style={styles.statValue}>
+              {donations.length}
+            </Text>
+            <Text style={styles.statLabel}>
+              Donations
+            </Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statIcon}>🙏</Text>
-            <Text style={styles.statValue}>{requests.length}</Text>
-            <Text style={styles.statLabel}>Requests</Text>
+            <Text style={styles.statValue}>
+              {requests.length}
+            </Text>
+            <Text style={styles.statLabel}>
+              Requests
+            </Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statIcon}>✅</Text>
+            <Text style={styles.statIcon}>⏳</Text>
             <Text style={styles.statValue}>
-              {
-                donations.filter((item) => item.status === "Pending").length +
-                requests.filter((item) => item.status === "Pending").length
-              }
+              {pendingCount}
             </Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statLabel}>
+              Pending
+            </Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Manage Donations</Text>
+        <TouchableOpacity
+  style={styles.createCampaignButton}
+  onPress={() =>
+    navigation.navigate("CreateCampaign")
+  }
+>
+  <Text style={styles.createCampaignButtonText}>
+    📢 Create New Campaign
+  </Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+  style={styles.createCharityButton}
+  onPress={() =>
+    navigation.navigate("CreateCharity")
+  }
+>
+  <Text style={styles.createCharityButtonText}>
+    🤝 Create New Charity
+  </Text>
+</TouchableOpacity>
+<Text style={styles.sectionTitle}>
+  Manage Campaigns
+</Text>
+
+
+{campaigns.length === 0 ? (
+  <View style={styles.emptyCard}>
+    <Text style={styles.emptyText}>
+      No campaigns created yet.
+    </Text>
+  </View>
+) : (
+  campaigns.map((campaign) => {
+    const progress =
+      getCampaignProgress(campaign);
+
+    const campaignStatus =
+      campaign.status || "Active";
+
+    const statusStyles =
+      getCampaignStatusStyle(
+        campaignStatus
+      );
+
+    const isProcessing =
+      processingId === campaign.id;
+
+    return (
+      <View
+        key={campaign.id}
+        style={styles.campaignCard}
+      >
+        <View style={styles.cardTopRow}>
+          <Text
+            style={styles.cardTitle}
+            numberOfLines={2}
+          >
+            📢 {campaign.title}
+          </Text>
+
+          <View
+            style={[
+              styles.statusBadge,
+              statusStyles.badge,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                statusStyles.text,
+              ]}
+            >
+              {campaignStatus}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.cardSubtitle}>
+          {campaign.organization ||
+            "Ubuntu Connect"}
+        </Text>
+
+        <Text
+          style={styles.cardDescription}
+          numberOfLines={3}
+        >
+          {campaign.description}
+        </Text>
+
+        <Text style={styles.cardMeta}>
+          📍 {campaign.location}
+        </Text>
+
+        <View style={styles.campaignProgressRow}>
+          <View>
+            <Text style={styles.campaignLabel}>
+              Goal
+            </Text>
+
+            <Text style={styles.campaignValue}>
+              {progress.goal}
+            </Text>
+          </View>
+
+          <View style={styles.campaignRightValue}>
+            <Text style={styles.campaignLabel}>
+              Progress
+            </Text>
+
+            <Text style={styles.campaignValue}>
+              {progress.progress}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.campaignProgressBar}>
+          <View
+            style={[
+              styles.campaignProgressFill,
+              {
+                width: `${progress.percentage}%`,
+              },
+            ]}
+          />
+        </View>
+
+        <TouchableOpacity
+  style={styles.updateProgressButton}
+  onPress={() =>
+    navigation.navigate("UpdateCampaign", {
+      campaignId: campaign.id,
+      campaignTitle: campaign.title,
+      campaignType: campaign.campaignType,
+      targetItems: campaign.targetItems || 0,
+      collectedItems: campaign.collectedItems || 0,
+      targetAmount: campaign.targetAmount || 0,
+      currentAmount: campaign.currentAmount || 0,
+    })
+  }
+>
+  <Text style={styles.adminButtonText}>
+    📊 Update Progress
+  </Text>
+</TouchableOpacity>
+
+        <Text style={styles.adminActionsTitle}>
+          Campaign Actions
+        </Text>
+
+        {campaignStatus === "Active" ? (
+          <View style={styles.adminButtonRow}>
+            <TouchableOpacity
+              style={[
+                styles.completeCampaignButton,
+                isProcessing &&
+                  styles.disabledButton,
+              ]}
+              onPress={() =>
+                updateCampaignStatus(
+                  campaign,
+                  "Completed"
+                )
+              }
+              disabled={isProcessing}
+            >
+              <Text style={styles.adminButtonText}>
+                ✅ Complete
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.closeCampaignButton,
+                isProcessing &&
+                  styles.disabledButton,
+              ]}
+              onPress={() =>
+                updateCampaignStatus(
+                  campaign,
+                  "Closed"
+                )
+              }
+              disabled={isProcessing}
+            >
+              <Text style={styles.adminButtonText}>
+                🔒 Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[
+              styles.reopenCampaignButton,
+              isProcessing &&
+                styles.disabledButton,
+            ]}
+            onPress={() =>
+              updateCampaignStatus(
+                campaign,
+                "Active"
+              )
+            }
+            disabled={isProcessing}
+          >
+            <Text style={styles.adminButtonText}>
+              🔓 Reopen Campaign
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[
+            styles.deleteButton,
+            isProcessing &&
+              styles.disabledButton,
+          ]}
+          onPress={() =>
+            deleteCampaign(campaign)
+          }
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator
+              size="small"
+              color="#FFFFFF"
+            />
+          ) : (
+            <Text style={styles.deleteText}>
+              Delete Campaign
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  })
+)}
+
+<Text style={styles.sectionTitle}>
+  Manage Charities
+</Text>
+
+{charities.length === 0 ? (
+  <View style={styles.emptyCard}>
+    <Text style={styles.emptyText}>
+      No charities created yet.
+    </Text>
+  </View>
+) : (
+  charities.map((charity) => {
+    const isProcessing =
+      processingId === charity.id;
+
+    const needsText = Array.isArray(
+      charity.needs
+    )
+      ? charity.needs.join(", ")
+      : charity.needs || "Not specified";
+
+    const servicesText = Array.isArray(
+      charity.services
+    )
+      ? charity.services.join(", ")
+      : charity.services || "Not specified";
+
+    return (
+      <View
+        key={charity.id}
+        style={styles.charityCard}
+      >
+        <View style={styles.cardTopRow}>
+          <Text
+            style={styles.cardTitle}
+            numberOfLines={2}
+          >
+            🤝 {charity.name}
+          </Text>
+
+          <View
+            style={[
+              styles.statusBadge,
+              charity.verified
+                ? styles.verifiedCharityBadge
+                : styles.unverifiedCharityBadge,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                charity.verified
+                  ? styles.verifiedCharityText
+                  : styles.unverifiedCharityText,
+              ]}
+            >
+              {charity.verified
+                ? "Verified"
+                : "Unverified"}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.cardSubtitle}>
+          {charity.type ||
+            "Community Organisation"}
+        </Text>
+
+        <Text
+          style={styles.cardDescription}
+          numberOfLines={3}
+        >
+          {charity.description ||
+            "No description provided."}
+        </Text>
+
+        <Text style={styles.cardMeta}>
+          📍{" "}
+          {charity.address ||
+            charity.location ||
+            "Location unavailable"}
+        </Text>
+
+        {charity.phone ? (
+          <Text style={styles.cardMeta}>
+            📞 {charity.phone}
+          </Text>
+        ) : null}
+
+        {charity.email ? (
+          <Text style={styles.cardMeta}>
+            ✉️ {charity.email}
+          </Text>
+        ) : null}
+
+        <View style={styles.charityInfoBox}>
+          <Text style={styles.charityInfoLabel}>
+            Current needs
+          </Text>
+
+          <Text style={styles.charityInfoValue}>
+            {needsText}
+          </Text>
+        </View>
+
+        <View style={styles.charityInfoBox}>
+          <Text style={styles.charityInfoLabel}>
+            Services
+          </Text>
+
+          <Text style={styles.charityInfoValue}>
+            {servicesText}
+          </Text>
+        </View>
+
+        <Text style={styles.adminActionsTitle}>
+          Charity Actions
+        </Text>
+
+        <TouchableOpacity
+          style={[
+            charity.verified
+              ? styles.unverifyCharityButton
+              : styles.verifyCharityButton,
+            isProcessing &&
+              styles.disabledButton,
+          ]}
+          onPress={() =>
+            updateCharityVerification(
+              charity,
+              !charity.verified
+            )
+          }
+          disabled={isProcessing}
+        >
+          <Text style={styles.adminButtonText}>
+            {charity.verified
+              ? "⚠️ Mark as Unverified"
+              : "✅ Verify Charity"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.deleteButton,
+            isProcessing &&
+              styles.disabledButton,
+          ]}
+          onPress={() =>
+            deleteCharity(charity)
+          }
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator
+              size="small"
+              color="#FFFFFF"
+            />
+          ) : (
+            <Text style={styles.deleteText}>
+              Delete Charity
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  })
+)}
+
+        <Text style={styles.sectionTitle}>
+          Manage Donations
+        </Text>
 
         {donations.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No donations found.</Text>
+            <Text style={styles.emptyText}>
+              No donations found.
+            </Text>
           </View>
         ) : (
-          donations.map((donation) => (
-            <View key={donation.id} style={styles.manageCard}>
-              <View style={styles.cardTopRow}>
-                <Text style={styles.cardTitle}>
-                  🎁 {donation.itemName}
+          donations.map((donation) => {
+            const statusStyles =
+              getStatusStyles(
+                donation.status || "Pending"
+              );
+
+            const isProcessing =
+              processingId === donation.id;
+
+            return (
+              <View
+                key={donation.id}
+                style={styles.manageCard}
+              >
+                <View style={styles.cardTopRow}>
+                  <Text
+                    style={styles.cardTitle}
+                    numberOfLines={2}
+                  >
+                    🎁 {donation.itemName}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      statusStyles.badge,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        statusStyles.text,
+                      ]}
+                    >
+                      {donation.status ||
+                        "Pending"}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.cardSubtitle}>
+                  {donation.category} •{" "}
+                  {donation.condition}
                 </Text>
 
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>
-                    {donation.status}
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.cardSubtitle}>
-                {donation.category} • {donation.condition}
-              </Text>
-
-              <Text style={styles.cardDescription} numberOfLines={2}>
-                {donation.description}
-              </Text>
-
-              <Text style={styles.cardMeta}>
-                📍 {donation.address}
-              </Text>
-
-              <Text style={styles.cardMeta}>
-                Method: {donation.deliveryMethod}
-              </Text>
-
-              <Text style={styles.adminActionsTitle}>Admin Actions</Text>
-
-              <View style={styles.adminButtonRow}>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  onPress={() => updateDonationStatus(donation, "Approved")}
+                <Text
+                  style={styles.cardDescription}
+                  numberOfLines={2}
                 >
-                  <Text style={styles.adminButtonText}>✅ Approve</Text>
-                </TouchableOpacity>
+                  {donation.description}
+                </Text>
 
-                <TouchableOpacity
-                  style={styles.rejectButton}
-                  onPress={() => updateDonationStatus(donation, "Rejected")}
+                <Text style={styles.cardMeta}>
+                  📍 {donation.address}
+                </Text>
+
+                <Text style={styles.cardMeta}>
+                  Method:{" "}
+                  {donation.deliveryMethod}
+                </Text>
+
+                <Text
+                  style={styles.adminActionsTitle}
                 >
-                  <Text style={styles.adminButtonText}>❌ Reject</Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => deleteDonation(donation)}
-              >
-                <Text style={styles.deleteText}>Delete Donation</Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        )}
-
-        <Text style={styles.sectionTitle}>Manage Help Requests</Text>
-
-        {requests.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No help requests found.</Text>
-          </View>
-        ) : (
-          requests.map((request) => (
-            <View key={request.id} style={styles.manageCard}>
-              <View style={styles.cardTopRow}>
-                <Text style={styles.cardTitle}>
-                  🙏 {request.itemNeeded}
+                  Admin Actions
                 </Text>
 
                 <View
-                  style={[
-                    styles.requestBadge,
-                    request.urgency === "Urgent" && styles.urgentBadge,
-                  ]}
+                  style={styles.adminButtonRow}
                 >
-                  <Text
+                  <TouchableOpacity
                     style={[
-                      styles.requestBadgeText,
-                      request.urgency === "Urgent" && styles.urgentBadgeText,
+                      styles.approveButton,
+                      isProcessing &&
+                        styles.disabledButton,
+                    ]}
+                    onPress={() =>
+                      updateDonationStatus(
+                        donation,
+                        "Approved"
+                      )
+                    }
+                    disabled={isProcessing}
+                  >
+                    <Text
+                      style={styles.adminButtonText}
+                    >
+                      ✅ Approve
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.rejectButton,
+                      isProcessing &&
+                        styles.disabledButton,
+                    ]}
+                    onPress={() =>
+                      updateDonationStatus(
+                        donation,
+                        "Rejected"
+                      )
+                    }
+                    disabled={isProcessing}
+                  >
+                    <Text
+                      style={styles.adminButtonText}
+                    >
+                      ❌ Reject
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.deleteButton,
+                    isProcessing &&
+                      styles.disabledButton,
+                  ]}
+                  onPress={() =>
+                    deleteDonation(donation)
+                  }
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="#FFFFFF"
+                    />
+                  ) : (
+                    <Text
+                      style={styles.deleteText}
+                    >
+                      Delete Donation
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            );
+          })
+        )}
+
+        <Text style={styles.sectionTitle}>
+          Manage Help Requests
+        </Text>
+
+        {requests.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              No help requests found.
+            </Text>
+          </View>
+        ) : (
+          requests.map((request) => {
+            const statusStyles =
+              getStatusStyles(
+                request.status || "Pending"
+              );
+
+            const isProcessing =
+              processingId === request.id;
+
+            return (
+              <View
+                key={request.id}
+                style={styles.manageCard}
+              >
+                <View style={styles.cardTopRow}>
+                  <Text
+                    style={styles.cardTitle}
+                    numberOfLines={2}
+                  >
+                    🙏 {request.itemNeeded}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      statusStyles.badge,
                     ]}
                   >
-                    {request.urgency}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.statusText,
+                        statusStyles.text,
+                      ]}
+                    >
+                      {request.status ||
+                        "Pending"}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <Text style={styles.cardSubtitle}>
-                {request.category} • Quantity: {request.quantity}
-              </Text>
+                <Text style={styles.cardSubtitle}>
+                  {request.category} • Quantity:{" "}
+                  {request.quantity}
+                </Text>
 
-              <Text style={styles.cardDescription} numberOfLines={2}>
-                {request.description}
-              </Text>
-
-              <Text style={styles.cardMeta}>
-                📍 {request.location}
-              </Text>
-
-              <Text style={styles.cardMeta}>
-                Status: {request.status}
-              </Text>
-
-              <Text style={styles.adminActionsTitle}>Admin Actions</Text>
-
-              <View style={styles.adminButtonRow}>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  onPress={() => updateRequestStatus(request, "Approved")}
+                <Text
+                  style={styles.cardDescription}
+                  numberOfLines={2}
                 >
-                  <Text style={styles.adminButtonText}>✅ Approve</Text>
-                </TouchableOpacity>
+                  {request.description}
+                </Text>
+
+                <Text style={styles.cardMeta}>
+                  📍 {request.location}
+                </Text>
+
+                <Text style={styles.cardMeta}>
+                  Urgency:{" "}
+                  {request.urgency || "Normal"}
+                </Text>
+
+                <Text
+                  style={styles.adminActionsTitle}
+                >
+                  Admin Actions
+                </Text>
+
+                <View
+                  style={styles.adminButtonRow}
+                >
+                  <TouchableOpacity
+                    style={[
+                      styles.approveButton,
+                      isProcessing &&
+                        styles.disabledButton,
+                    ]}
+                    onPress={() =>
+                      updateRequestStatus(
+                        request,
+                        "Approved"
+                      )
+                    }
+                    disabled={isProcessing}
+                  >
+                    <Text
+                      style={styles.adminButtonText}
+                    >
+                      ✅ Approve
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.rejectButton,
+                      isProcessing &&
+                        styles.disabledButton,
+                    ]}
+                    onPress={() =>
+                      updateRequestStatus(
+                        request,
+                        "Rejected"
+                      )
+                    }
+                    disabled={isProcessing}
+                  >
+                    <Text
+                      style={styles.adminButtonText}
+                    >
+                      ❌ Reject
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
                 <TouchableOpacity
-                  style={styles.rejectButton}
-                  onPress={() => updateRequestStatus(request, "Rejected")}
+                  style={[
+                    styles.deleteButton,
+                    isProcessing &&
+                      styles.disabledButton,
+                  ]}
+                  onPress={() =>
+                    deleteRequest(request)
+                  }
+                  disabled={isProcessing}
                 >
-                  <Text style={styles.adminButtonText}>❌ Reject</Text>
+                  {isProcessing ? (
+                    <ActivityIndicator
+                      size="small"
+                      color="#FFFFFF"
+                    />
+                  ) : (
+                    <Text
+                      style={styles.deleteText}
+                    >
+                      Delete Request
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => deleteRequest(request)}
-              >
-                <Text style={styles.deleteText}>Delete Request</Text>
-              </TouchableOpacity>
-            </View>
-          ))
+            );
+          })
         )}
 
         <View style={{ height: 100 }} />
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -499,6 +1828,7 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontSize: 16,
     fontWeight: "600",
+    marginTop: 14,
   },
 
   header: {
@@ -507,6 +1837,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+
+  headerTextContainer: {
+    flex: 1,
+    marginRight: 12,
   },
 
   welcome: {
@@ -548,8 +1883,7 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 15,
     alignItems: "center",
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 3,
@@ -584,8 +1918,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 18,
     marginBottom: 14,
-
-    shadowColor: "#000",
+    shadowColor: "#000000",
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 3,
@@ -625,36 +1958,37 @@ const styles = StyleSheet.create({
   },
 
   statusBadge: {
-    backgroundColor: "#DCFCE7",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
   },
 
   statusText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  pendingBadge: {
+    backgroundColor: "#FEF3C7",
+  },
+
+  pendingText: {
+    color: "#D97706",
+  },
+
+  approvedBadge: {
+    backgroundColor: "#DCFCE7",
+  },
+
+  approvedText: {
     color: "#16A34A",
-    fontSize: 12,
-    fontWeight: "700",
   },
 
-  requestBadge: {
-    backgroundColor: "#DBEAFE",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-
-  requestBadgeText: {
-    color: "#2563EB",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  urgentBadge: {
+  rejectedBadge: {
     backgroundColor: "#FEE2E2",
   },
 
-  urgentBadgeText: {
+  rejectedText: {
     color: "#DC2626",
   },
 
@@ -701,16 +2035,22 @@ const styles = StyleSheet.create({
   },
 
   deleteButton: {
+    minHeight: 46,
     backgroundColor: "#EF4444",
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
+    justifyContent: "center",
     marginTop: 14,
   },
 
   deleteText: {
     color: "#FFFFFF",
     fontWeight: "700",
+  },
+
+  disabledButton: {
+    opacity: 0.55,
   },
 
   emptyCard: {
@@ -725,4 +2065,212 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontWeight: "600",
   },
+  createCampaignButton: {
+  backgroundColor: "#2563EB",
+  borderRadius: 15,
+  paddingVertical: 15,
+  alignItems: "center",
+  marginBottom: 25,
+},
+
+createCampaignButtonText: {
+  color: "#FFFFFF",
+  fontSize: 15,
+  fontWeight: "800",
+},
+campaignCard: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 18,
+  padding: 18,
+  marginBottom: 14,
+  borderLeftWidth: 4,
+  borderLeftColor: "#2563EB",
+  shadowColor: "#000000",
+  shadowOpacity: 0.05,
+  shadowRadius: 6,
+  elevation: 3,
+},
+
+campaignActiveBadge: {
+  backgroundColor: "#DCFCE7",
+},
+
+campaignActiveText: {
+  color: "#16A34A",
+},
+
+campaignCompletedBadge: {
+  backgroundColor: "#DBEAFE",
+},
+
+campaignCompletedText: {
+  color: "#2563EB",
+},
+
+campaignClosedBadge: {
+  backgroundColor: "#E2E8F0",
+},
+
+campaignClosedText: {
+  color: "#475569",
+},
+
+campaignProgressRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 15,
+  marginBottom: 10,
+},
+
+campaignRightValue: {
+  alignItems: "flex-end",
+},
+
+campaignLabel: {
+  color: "#64748B",
+  fontSize: 12,
+},
+
+campaignValue: {
+  color: "#1E293B",
+  fontSize: 14,
+  fontWeight: "700",
+  marginTop: 3,
+},
+
+campaignProgressBar: {
+  width: "100%",
+  height: 9,
+  borderRadius: 10,
+  backgroundColor: "#E2E8F0",
+  overflow: "hidden",
+  marginBottom: 5,
+},
+
+campaignProgressFill: {
+  height: "100%",
+  borderRadius: 10,
+  backgroundColor: "#22C55E",
+},
+
+completeCampaignButton: {
+  flex: 1,
+  backgroundColor: "#22C55E",
+  borderRadius: 12,
+  paddingVertical: 13,
+  alignItems: "center",
+  marginRight: 7,
+},
+
+closeCampaignButton: {
+  flex: 1,
+  backgroundColor: "#F97316",
+  borderRadius: 12,
+  paddingVertical: 13,
+  alignItems: "center",
+  marginLeft: 7,
+},
+
+reopenCampaignButton: {
+  backgroundColor: "#2563EB",
+  borderRadius: 12,
+  paddingVertical: 13,
+  alignItems: "center",
+  marginTop: 4,
+},
+updateProgressButton: {
+  backgroundColor: "#2563EB",
+  borderRadius: 12,
+  paddingVertical: 13,
+  alignItems: "center",
+  marginTop: 10,
+  marginBottom: 6,
+},
+
+updateProgressButtonText: {
+  color: "#FFFFFF",
+  fontSize: 14,
+  fontWeight: "800",
+},
+createCharityButton: {
+  backgroundColor: "#22C55E",
+  borderRadius: 15,
+  paddingVertical: 15,
+  alignItems: "center",
+  marginTop: -13,
+  marginBottom: 25,
+},
+
+createCharityButtonText: {
+  color: "#FFFFFF",
+  fontSize: 15,
+  fontWeight: "800",
+},
+charityCard: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 18,
+  padding: 18,
+  marginBottom: 14,
+  borderLeftWidth: 4,
+  borderLeftColor: "#22C55E",
+  shadowColor: "#000000",
+  shadowOpacity: 0.05,
+  shadowRadius: 6,
+  elevation: 3,
+},
+
+verifiedCharityBadge: {
+  backgroundColor: "#DCFCE7",
+},
+
+verifiedCharityText: {
+  color: "#16A34A",
+},
+
+unverifiedCharityBadge: {
+  backgroundColor: "#FEF3C7",
+},
+
+unverifiedCharityText: {
+  color: "#D97706",
+},
+
+charityInfoBox: {
+  backgroundColor: "#F8FAFC",
+  borderRadius: 12,
+  padding: 12,
+  marginTop: 10,
+},
+
+charityInfoLabel: {
+  color: "#64748B",
+  fontSize: 11,
+  fontWeight: "600",
+},
+
+charityInfoValue: {
+  color: "#1E293B",
+  fontSize: 13,
+  fontWeight: "600",
+  lineHeight: 19,
+  marginTop: 4,
+},
+
+verifyCharityButton: {
+  backgroundColor: "#22C55E",
+  borderRadius: 12,
+  paddingVertical: 13,
+  alignItems: "center",
+  justifyContent: "center",
+  marginTop: 4,
+},
+
+unverifyCharityButton: {
+  backgroundColor: "#F59E0B",
+  borderRadius: 12,
+  paddingVertical: 13,
+  alignItems: "center",
+  justifyContent: "center",
+  marginTop: 4,
+},
 });

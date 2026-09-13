@@ -15,6 +15,12 @@ import Notifications from "../screens/Notifications";
 import AdminDashboard from "../screens/AdminDashboard";
 import MainTabs from "./MainTabs";
 import Chat from "../screens/Chat";
+import CreateCampaign from "../screens/CreateCampaign";
+import UpdateCampaign from "../screens/UpdateCampaign";
+import CreateCharity from "../screens/CreateCharity";
+import MyActivity from "../screens/MyActivity";
+import EditProfile from "../screens/EditProfile";
+import DeleteAccount from "../screens/DeleteAccount";
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
@@ -47,6 +53,51 @@ export default function AppNavigator() {
           name="AdminDashboard"
           component={AdminDashboard}
         />
+        <Stack.Screen
+  name="CreateCampaign"
+  component={CreateCampaign}
+  options={{
+    headerShown: false,
+  }}
+/>
+
+<Stack.Screen
+  name="UpdateCampaign"
+  component={UpdateCampaign}
+  options={{
+    headerShown: false,
+  }}
+/>
+
+<Stack.Screen
+  name="CreateCharity"
+  component={CreateCharity}
+  options={{
+    headerShown: false,
+  }}
+/>
+<Stack.Screen
+  name="MyActivity"
+  component={MyActivity}
+  options={{
+    headerShown: false,
+  }}
+/>
+
+<Stack.Screen
+  name="EditProfile"
+  component={EditProfile}
+  options={{
+    headerShown: false,
+  }}
+/>
+<Stack.Screen
+  name="DeleteAccount"
+  component={DeleteAccount}
+  options={{
+    headerShown: false,
+  }}
+/>
       </Stack.Navigator>
     </NavigationContainer>
   );

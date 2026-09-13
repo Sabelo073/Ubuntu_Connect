@@ -20,29 +20,37 @@ import Profile from "../screens/Profile";
 const Tab = createBottomTabNavigator();
 
 export default function MainTabs() {
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadNotificationCount, setUnreadNotificationCount] =
+    useState(0);
+
+  const [unreadMessageCount, setUnreadMessageCount] =
+    useState(0);
 
   useEffect(() => {
     const user = auth.currentUser;
 
     if (!user) {
-      setUnreadCount(0);
+      setUnreadNotificationCount(0);
+      setUnreadMessageCount(0);
       return;
     }
 
+    // Listen for the user's notifications
     const notificationsQuery = query(
       collection(db, "notifications"),
       where("userId", "==", user.uid)
     );
 
-    const unsubscribe = onSnapshot(
+    const unsubscribeNotifications = onSnapshot(
       notificationsQuery,
       (snapshot) => {
         const unreadNotifications = snapshot.docs.filter(
           (document) => document.data().read === false
         );
 
-        setUnreadCount(unreadNotifications.length);
+        setUnreadNotificationCount(
+          unreadNotifications.length
+        );
       },
       (error) => {
         console.log(
@@ -50,15 +58,71 @@ export default function MainTabs() {
           error.message
         );
 
-        setUnreadCount(0);
+        setUnreadNotificationCount(0);
       }
     );
 
-    return () => unsubscribe();
+    // Listen for the user's conversations
+    const chatsQuery = query(
+      collection(db, "chats"),
+      where(
+        "participantIds",
+        "array-contains",
+        user.uid
+      )
+    );
+
+    const unsubscribeChats = onSnapshot(
+      chatsQuery,
+      (snapshot) => {
+        let totalUnreadMessages = 0;
+
+        snapshot.docs.forEach((document) => {
+          const chatData = document.data();
+
+          const chatUnreadCount =
+            chatData.unreadCounts?.[user.uid] || 0;
+
+          totalUnreadMessages += chatUnreadCount;
+        });
+
+        setUnreadMessageCount(totalUnreadMessages);
+      },
+      (error) => {
+        console.log(
+          "MESSAGE BADGE ERROR:",
+          error.message
+        );
+
+        setUnreadMessageCount(0);
+      }
+    );
+
+    return () => {
+      unsubscribeNotifications();
+      unsubscribeChats();
+    };
   }, []);
 
-  const badgeValue =
-    unreadCount > 99 ? "99+" : unreadCount;
+  const notificationBadgeValue =
+    unreadNotificationCount > 99
+      ? "99+"
+      : unreadNotificationCount;
+
+  const messageBadgeValue =
+    unreadMessageCount > 99
+      ? "99+"
+      : unreadMessageCount;
+
+  const badgeStyle = {
+    backgroundColor: "#EF4444",
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800",
+    minWidth: 18,
+    height: 18,
+    lineHeight: 18,
+  };
 
   return (
     <Tab.Navigator
@@ -131,6 +195,14 @@ export default function MainTabs() {
       <Tab.Screen
         name="Messages"
         component={Messages}
+        options={{
+          tabBarBadge:
+            unreadMessageCount > 0
+              ? messageBadgeValue
+              : undefined,
+
+          tabBarBadgeStyle: badgeStyle,
+        }}
       />
 
       <Tab.Screen
@@ -138,17 +210,11 @@ export default function MainTabs() {
         component={Notifications}
         options={{
           tabBarBadge:
-            unreadCount > 0 ? badgeValue : undefined,
+            unreadNotificationCount > 0
+              ? notificationBadgeValue
+              : undefined,
 
-          tabBarBadgeStyle: {
-            backgroundColor: "#EF4444",
-            color: "#FFFFFF",
-            fontSize: 10,
-            fontWeight: "800",
-            minWidth: 18,
-            height: 18,
-            lineHeight: 18,
-          },
+          tabBarBadgeStyle: badgeStyle,
         }}
       />
 

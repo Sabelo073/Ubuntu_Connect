@@ -6,11 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import {
   SafeAreaView,
 } from "react-native-safe-area-context";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 
@@ -19,6 +24,20 @@ const LogIn = ({ navigation }) => {
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+
+  const [resettingPassword, setResettingPassword] =
+  useState(false);
+
+  const showMessage = (title, message) => {
+  if (
+    Platform.OS === "web" &&
+    typeof window !== "undefined"
+  ) {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
+};
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -58,16 +77,122 @@ const LogIn = ({ navigation }) => {
       } else {
         navigation.replace("MainTabs");
       }
-    } catch (error) {
-      Alert.alert("Login Error", error.message);
-    } finally {
-      setLoading(false);
-    }
+    } 
+     catch (error) {
+  console.log(
+    "LOGIN ERROR:",
+    error.code,
+    error.message
+  );
+
+  let errorMessage =
+    "Unable to log in. Check your email and password.";
+
+  if (error.code === "auth/invalid-email") {
+    errorMessage =
+      "Please enter a valid email address.";
+  } else if (
+    error.code === "auth/invalid-credential"
+  ) {
+    errorMessage =
+      "The email address or password is incorrect.";
+  } else if (
+    error.code === "auth/too-many-requests"
+  ) {
+    errorMessage =
+      "Too many login attempts were made. Please wait before trying again.";
+  } else if (
+    error.code === "auth/network-request-failed"
+  ) {
+    errorMessage =
+      "A network error occurred. Check your internet connection.";
+  }
+
+  showMessage(
+    "Login Error",
+    errorMessage
+  );
+} finally {
+  setLoading(false);
+}
   };
 
-  const handleGuestLogin = () => {
-    navigation.replace("MainTabs");
-  };
+  const handleForgotPassword = async () => {
+  const cleanEmail = email.trim().toLowerCase();
+
+  if (!cleanEmail) {
+    showMessage(
+      "Email Required",
+      "Enter your email address first, then press Forgot Password."
+    );
+
+    return;
+  }
+
+  const emailPattern =
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailPattern.test(cleanEmail)) {
+    showMessage(
+      "Invalid Email",
+      "Please enter a valid email address."
+    );
+
+    return;
+  }
+
+  try {
+    setResettingPassword(true);
+
+    await sendPasswordResetEmail(
+      auth,
+      cleanEmail
+    );
+
+    showMessage(
+      "Check Your Email",
+      "If an Ubuntu Connect account is associated with that email address, a password-reset link has been sent. Check your inbox and spam folder."
+    );
+  } catch (error) {
+    console.log(
+      "PASSWORD RESET ERROR:",
+      error.code,
+      error.message
+    );
+
+    let errorMessage =
+      "The password-reset email could not be sent. Please try again.";
+
+    if (error.code === "auth/invalid-email") {
+      errorMessage =
+        "Please enter a valid email address.";
+    } else if (
+      error.code === "auth/too-many-requests"
+    ) {
+      errorMessage =
+        "Too many reset attempts were made. Please wait before trying again.";
+    } else if (
+      error.code === "auth/network-request-failed"
+    ) {
+      errorMessage =
+        "A network error occurred. Check your internet connection and try again.";
+    }
+
+    showMessage(
+      "Password Reset Error",
+      errorMessage
+    );
+  } finally {
+    setResettingPassword(false);
+  }
+};
+
+ const handleGuestLogin = () => {
+  showMessage(
+    "Guest Access Coming Soon",
+    "Guest access is not available yet. Please log in or create an account."
+  );
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -106,17 +231,38 @@ const LogIn = ({ navigation }) => {
           style={styles.input}
         />
 
-        <TouchableOpacity>
-          <Text style={styles.forgot}>Forgot Password?</Text>
-        </TouchableOpacity>
+       <TouchableOpacity
+  style={styles.forgotButton}
+  onPress={handleForgotPassword}
+  disabled={resettingPassword || loading}
+>
+  {resettingPassword ? (
+    <View style={styles.resetLoadingContainer}>
+      <ActivityIndicator
+        size="small"
+        color="#2563EB"
+      />
+
+      <Text style={styles.resettingText}>
+        Sending reset link...
+      </Text>
+    </View>
+  ) : (
+    <Text style={styles.forgot}>
+      Forgot Password?
+    </Text>
+  )}
+</TouchableOpacity>
+
 
         <TouchableOpacity
           style={[
             styles.loginButton,
-            loading && styles.disabledButton,
+          (loading || resettingPassword) &&
+  styles.disabledButton,
           ]}
           onPress={handleLogin}
-          disabled={loading}
+         disabled={loading || resettingPassword}
         >
           <Text style={styles.loginText}>
             {loading ? "Checking Role..." : "Login"}
@@ -227,12 +373,28 @@ const styles = StyleSheet.create({
     color: "#1E293B",
   },
 
-  forgot: {
-    alignSelf: "flex-end",
-    color: "#2563EB",
-    fontWeight: "600",
-    marginBottom: 25,
-  },
+ forgot: {
+  color: "#2563EB",
+  fontWeight: "600",
+},
+  forgotButton: {
+  minHeight: 30,
+  alignSelf: "flex-end",
+  justifyContent: "center",
+  marginBottom: 25,
+},
+
+resetLoadingContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+
+resettingText: {
+  color: "#2563EB",
+  fontSize: 13,
+  fontWeight: "600",
+  marginLeft: 8,
+},
 
   loginButton: {
     backgroundColor: "#2563EB",

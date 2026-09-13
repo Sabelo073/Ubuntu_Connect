@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import {
   View,
   Text,
@@ -11,9 +12,9 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import {
-  SafeAreaView,
-} from "react-native-safe-area-context";
+
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import {
   collection,
   query,
@@ -24,6 +25,7 @@ import {
   updateDoc,
   serverTimestamp,
   increment,
+  writeBatch,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebaseConfig";
@@ -39,20 +41,102 @@ const Chat = ({ route, navigation }) => {
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
 
   const currentUser = auth.currentUser;
+
+  const showError = (title, message) => {
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined"
+    ) {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   useEffect(() => {
     navigation.setOptions({
       headerShown: true,
       title: otherUserName,
       headerTintColor: "#1E293B",
+
       headerStyle: {
         backgroundColor: "#FFFFFF",
       },
+
+      headerTitleStyle: {
+        fontWeight: "700",
+      },
+
       headerShadowVisible: false,
     });
   }, [navigation, otherUserName]);
+
+  const markReceivedMessagesAsRead = async (
+    receivedMessages
+  ) => {
+    if (
+      !currentUser ||
+      !chatId ||
+      markingRead
+    ) {
+      return;
+    }
+
+    const unreadReceivedMessages =
+      receivedMessages.filter(
+        (message) =>
+          message.receiverId === currentUser.uid &&
+          message.senderId !== currentUser.uid &&
+          message.read === false
+      );
+
+    if (unreadReceivedMessages.length === 0) {
+      return;
+    }
+
+    try {
+      setMarkingRead(true);
+
+      const batch = writeBatch(db);
+
+      unreadReceivedMessages.forEach((message) => {
+        const messageReference = doc(
+          db,
+          "chats",
+          chatId,
+          "messages",
+          message.id
+        );
+
+        batch.update(messageReference, {
+          read: true,
+        });
+      });
+
+      const chatReference = doc(
+        db,
+        "chats",
+        chatId
+      );
+
+      batch.update(chatReference, {
+        [`unreadCounts.${currentUser.uid}`]: 0,
+      });
+
+      await batch.commit();
+    } catch (error) {
+      console.log(
+        "MARK MESSAGES READ ERROR:",
+        error.code,
+        error.message
+      );
+    } finally {
+      setMarkingRead(false);
+    }
+  };
 
   useEffect(() => {
     if (!chatId || !currentUser) {
@@ -61,28 +145,45 @@ const Chat = ({ route, navigation }) => {
     }
 
     const messagesQuery = query(
-      collection(db, "chats", chatId, "messages"),
+      collection(
+        db,
+        "chats",
+        chatId,
+        "messages"
+      ),
       orderBy("createdAt", "desc")
     );
 
     const unsubscribe = onSnapshot(
       messagesQuery,
+
       (snapshot) => {
-        const messageList = snapshot.docs.map((messageDocument) => ({
-          id: messageDocument.id,
-          ...messageDocument.data(),
-        }));
+        const messageList = snapshot.docs.map(
+          (messageDocument) => ({
+            id: messageDocument.id,
+            ...messageDocument.data(),
+          })
+        );
 
         setMessages(messageList);
         setLoading(false);
+
+        markReceivedMessagesAsRead(messageList);
       },
+
       (error) => {
-        console.log("CHAT MESSAGES ERROR:", error.message);
+        console.log(
+          "CHAT MESSAGES ERROR:",
+          error.code,
+          error.message
+        );
+
         setLoading(false);
 
-        Alert.alert(
+        showError(
           "Chat Error",
-          "The conversation could not be loaded."
+          error.message ||
+            "The conversation could not be loaded."
         );
       }
     );
@@ -90,23 +191,58 @@ const Chat = ({ route, navigation }) => {
     return () => unsubscribe();
   }, [chatId, currentUser?.uid]);
 
-  useEffect(() => {
-    if (!chatId || !currentUser) {
+  const createMessageNotification = async (
+    cleanMessage
+  ) => {
+    if (!otherUserId || !currentUser) {
       return;
     }
 
-    const clearUnreadCount = async () => {
-      try {
-        await updateDoc(doc(db, "chats", chatId), {
-          [`unreadCounts.${currentUser.uid}`]: 0,
-        });
-      } catch (error) {
-        console.log("CLEAR UNREAD ERROR:", error.message);
-      }
-    };
+    const senderName =
+      currentUser.displayName ||
+      currentUser.email ||
+      "Ubuntu Connect User";
 
-    clearUnreadCount();
-  }, [chatId, currentUser?.uid, messages.length]);
+    try {
+      await addDoc(
+        collection(db, "notifications"),
+        {
+          userId: otherUserId,
+
+          senderId: currentUser.uid,
+          senderName,
+
+          title: "New Message",
+
+          message:
+            `${senderName} sent you a message: ` +
+            `"${cleanMessage}"`,
+
+          type: "message",
+
+          chatId,
+
+          otherUserId: currentUser.uid,
+          otherUserName: senderName,
+
+          read: false,
+          createdAt: serverTimestamp(),
+        }
+      );
+    } catch (error) {
+      console.log(
+        "MESSAGE NOTIFICATION ERROR:",
+        error.code,
+        error.message
+      );
+
+      /*
+        The message was already sent successfully.
+        A notification failure should not make the
+        user send the same message again.
+      */
+    }
+  };
 
   const sendMessage = async () => {
     const cleanMessage = messageText.trim();
@@ -126,7 +262,12 @@ const Chat = ({ route, navigation }) => {
       setMessageText("");
 
       await addDoc(
-        collection(db, "chats", chatId, "messages"),
+        collection(
+          db,
+          "chats",
+          chatId,
+          "messages"
+        ),
         {
           senderId: currentUser.uid,
           receiverId: otherUserId,
@@ -136,21 +277,37 @@ const Chat = ({ route, navigation }) => {
         }
       );
 
-      await updateDoc(doc(db, "chats", chatId), {
-        lastMessage: cleanMessage,
-        lastMessageAt: serverTimestamp(),
-        lastSenderId: currentUser.uid,
-        [`unreadCounts.${otherUserId}`]: increment(1),
-        [`unreadCounts.${currentUser.uid}`]: 0,
-      });
+      await updateDoc(
+        doc(db, "chats", chatId),
+        {
+          lastMessage: cleanMessage,
+          lastMessageAt: serverTimestamp(),
+          lastSenderId: currentUser.uid,
+
+          [`unreadCounts.${otherUserId}`]:
+            increment(1),
+
+          [`unreadCounts.${currentUser.uid}`]:
+            0,
+        }
+      );
+
+      await createMessageNotification(
+        cleanMessage
+      );
     } catch (error) {
-      console.log("SEND MESSAGE ERROR:", error.message);
+      console.log(
+        "SEND MESSAGE ERROR:",
+        error.code,
+        error.message
+      );
 
       setMessageText(cleanMessage);
 
-      Alert.alert(
+      showError(
         "Message Error",
-        "Your message could not be sent. Please try again."
+        error.message ||
+          "Your message could not be sent. Please try again."
       );
     } finally {
       setSending(false);
@@ -178,12 +335,14 @@ const Chat = ({ route, navigation }) => {
   };
 
   const renderMessage = ({ item }) => {
-    const isMyMessage = item.senderId === currentUser?.uid;
+    const isMyMessage =
+      item.senderId === currentUser?.uid;
 
     return (
       <View
         style={[
           styles.messageRow,
+
           isMyMessage
             ? styles.myMessageRow
             : styles.otherMessageRow,
@@ -192,6 +351,7 @@ const Chat = ({ route, navigation }) => {
         <View
           style={[
             styles.messageBubble,
+
             isMyMessage
               ? styles.myMessageBubble
               : styles.otherMessageBubble,
@@ -200,6 +360,7 @@ const Chat = ({ route, navigation }) => {
           <Text
             style={[
               styles.messageText,
+
               isMyMessage
                 ? styles.myMessageText
                 : styles.otherMessageText,
@@ -208,14 +369,35 @@ const Chat = ({ route, navigation }) => {
             {item.text}
           </Text>
 
-          <Text
-            style={[
-              styles.messageTime,
-              isMyMessage && styles.myMessageTime,
-            ]}
-          >
-            {formatMessageTime(item.createdAt)}
-          </Text>
+          <View style={styles.messageDetails}>
+            <Text
+              style={[
+                styles.messageTime,
+
+                isMyMessage &&
+                  styles.myMessageTime,
+              ]}
+            >
+              {formatMessageTime(
+                item.createdAt
+              )}
+            </Text>
+
+            {isMyMessage && (
+              <Text
+                style={[
+                  styles.deliveryStatus,
+
+                  item.read === true &&
+                    styles.readDeliveryStatus,
+                ]}
+              >
+                {item.read === true
+                  ? "✓✓ Read"
+                  : "✓ Sent"}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
     );
@@ -223,8 +405,12 @@ const Chat = ({ route, navigation }) => {
 
   if (!chatId || !currentUser) {
     return (
-      <SafeAreaView style={styles.centerContainer}>
-        <Text style={styles.errorIcon}>💬</Text>
+      <SafeAreaView
+        style={styles.centerContainer}
+      >
+        <Text style={styles.errorIcon}>
+          💬
+        </Text>
 
         <Text style={styles.errorTitle}>
           Conversation Unavailable
@@ -247,15 +433,27 @@ const Chat = ({ route, navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      edges={["left", "right", "bottom"]}
+    >
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
+        keyboardVerticalOffset={
+          Platform.OS === "ios" ? 90 : 0
+        }
       >
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#2563EB" />
+            <ActivityIndicator
+              size="large"
+              color="#2563EB"
+            />
 
             <Text style={styles.loadingText}>
               Loading conversation...
@@ -269,14 +467,25 @@ const Chat = ({ route, navigation }) => {
             inverted
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             contentContainerStyle={[
               styles.messageList,
-              messages.length === 0 && styles.emptyMessageList,
+
+              messages.length === 0 &&
+                styles.emptyMessageList,
             ]}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <View style={styles.emptyIconContainer}>
-                  <Text style={styles.emptyIcon}>💬</Text>
+                <View
+                  style={
+                    styles.emptyIconContainer
+                  }
+                >
+                  <Text
+                    style={styles.emptyIcon}
+                  >
+                    💬
+                  </Text>
                 </View>
 
                 <Text style={styles.emptyTitle}>
@@ -284,8 +493,9 @@ const Chat = ({ route, navigation }) => {
                 </Text>
 
                 <Text style={styles.emptyText}>
-                  Send a message to coordinate the donation,
-                  collection, or help request.
+                  Send a message to coordinate the
+                  donation, collection, or help
+                  request.
                 </Text>
               </View>
             }
@@ -300,17 +510,22 @@ const Chat = ({ route, navigation }) => {
             onChangeText={setMessageText}
             multiline
             maxLength={1000}
+            autoCorrect
             style={styles.input}
           />
 
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!messageText.trim() || sending) &&
+
+              (!messageText.trim() ||
+                sending) &&
                 styles.disabledSendButton,
             ]}
             onPress={sendMessage}
-            disabled={!messageText.trim() || sending}
+            disabled={
+              !messageText.trim() || sending
+            }
           >
             {sending ? (
               <ActivityIndicator
@@ -318,7 +533,11 @@ const Chat = ({ route, navigation }) => {
                 color="#FFFFFF"
               />
             ) : (
-              <Text style={styles.sendButtonText}>➤</Text>
+              <Text
+                style={styles.sendButtonText}
+              >
+                ➤
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -387,6 +606,11 @@ const styles = StyleSheet.create({
   myMessageBubble: {
     backgroundColor: "#2563EB",
     borderBottomRightRadius: 5,
+
+    shadowColor: "#2563EB",
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    elevation: 2,
   },
 
   otherMessageBubble: {
@@ -394,6 +618,11 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 5,
     borderWidth: 1,
     borderColor: "#E2E8F0",
+
+    shadowColor: "#000000",
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
 
   messageText: {
@@ -409,15 +638,33 @@ const styles = StyleSheet.create({
     color: "#1E293B",
   },
 
+  messageDetails: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginTop: 5,
+  },
+
   messageTime: {
     fontSize: 10,
-    marginTop: 5,
     textAlign: "right",
     color: "#94A3B8",
   },
 
   myMessageTime: {
     color: "#DBEAFE",
+  },
+
+  deliveryStatus: {
+    color: "#BFDBFE",
+    fontSize: 10,
+    fontWeight: "600",
+    marginLeft: 7,
+  },
+
+  readDeliveryStatus: {
+    color: "#FFFFFF",
+    fontWeight: "800",
   },
 
   inputContainer: {

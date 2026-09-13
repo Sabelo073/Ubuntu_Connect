@@ -14,7 +14,6 @@ import {
 import { signOut } from "firebase/auth";
 import {
   doc,
-  getDoc,
   collection,
   query,
   where,
@@ -36,19 +35,26 @@ const Profile = ({ navigation }) => {
       return;
     }
 
-    const fetchUserProfile = async () => {
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
+  const unsubscribeUser = onSnapshot(
+  doc(db, "users", user.uid),
+  (userSnapshot) => {
+    if (userSnapshot.exists()) {
+      setUserData(userSnapshot.data());
+    }
+  },
+  (error) => {
+    console.log(
+      "PROFILE LISTENER ERROR:",
+      error.code,
+      error.message
+    );
 
-        if (userDoc.exists()) {
-          setUserData(userDoc.data());
-        }
-      } catch (error) {
-        Alert.alert("Profile Error", error.message);
-      }
-    };
-
-    fetchUserProfile();
+    Alert.alert(
+      "Profile Error",
+      error.message
+    );
+  }
+);
 
     const donationsQuery = query(
       collection(db, "donations"),
@@ -80,10 +86,11 @@ const Profile = ({ navigation }) => {
       }
     );
 
-    return () => {
-      unsubscribeDonations();
-      unsubscribeRequests();
-    };
+   return () => {
+  unsubscribeUser();
+  unsubscribeDonations();
+  unsubscribeRequests();
+};
   }, []);
 
   const handleLogout = async () => {
@@ -103,6 +110,7 @@ const Profile = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.greenHeaderBackground} />
 
         <Text style={styles.heading}>Profile</Text>
 
@@ -128,6 +136,15 @@ const Profile = ({ navigation }) => {
               {userData?.role || "User"}
             </Text>
           </View>
+          <View style={styles.impactMessage}>
+  <Text style={styles.impactMessageIcon}>
+    🌱
+  </Text>
+
+  <Text style={styles.impactMessageText}>
+    Every contribution helps strengthen the community.
+  </Text>
+</View>
         </View>
 
         <Text style={styles.sectionTitle}>Your Impact</Text>
@@ -180,11 +197,52 @@ const Profile = ({ navigation }) => {
 
         <View style={styles.actionCard}>
           <TouchableOpacity
+  style={styles.actionRow}
+  onPress={() =>
+    navigation.navigate("MyActivity")
+  }
+>
+  <Text style={styles.actionEmoji}>
+    📋
+  </Text>
+<TouchableOpacity
+  style={styles.actionRow}
+  onPress={() =>
+    navigation.navigate("EditProfile")
+  }
+>
+  <Text style={styles.actionEmoji}>
+    ✏️
+  </Text>
+
+  <Text style={styles.actionText}>
+    Edit Profile
+  </Text>
+
+  <Text style={styles.actionArrow}>
+    ›
+  </Text>
+</TouchableOpacity>
+
+<View style={styles.divider} />
+  <Text style={styles.actionText}>
+    My Activity
+  </Text>
+
+  <Text style={styles.actionArrow}>
+    ›
+  </Text>
+</TouchableOpacity>
+
+<View style={styles.divider} />
+          <TouchableOpacity
             style={styles.actionRow}
             onPress={() => navigation.navigate("Donate")}
           >
             <Text style={styles.actionEmoji}>🎁</Text>
             <Text style={styles.actionText}>Donate an Item</Text>
+
+            <Text style={styles.actionArrow}>›</Text>
           </TouchableOpacity>
 
           <View style={styles.divider} />
@@ -195,6 +253,8 @@ const Profile = ({ navigation }) => {
           >
             <Text style={styles.actionEmoji}>🙏</Text>
             <Text style={styles.actionText}>Request Help</Text>
+
+            <Text style={styles.actionArrow}>›</Text>
           </TouchableOpacity>
 
           <View style={styles.divider} />
@@ -205,9 +265,43 @@ const Profile = ({ navigation }) => {
           >
             <Text style={styles.actionEmoji}>📢</Text>
             <Text style={styles.actionText}>Campaigns</Text>
+
+            <Text style={styles.actionArrow}>›</Text>
           </TouchableOpacity>
         </View>
+<Text style={styles.dangerSectionTitle}>
+  Danger Zone
+</Text>
 
+<View style={styles.dangerCard}>
+  <View style={styles.dangerInformation}>
+    <Text style={styles.dangerIcon}>
+      ⚠️
+    </Text>
+
+    <View style={styles.dangerTextContainer}>
+      <Text style={styles.dangerTitle}>
+        Delete Account
+      </Text>
+
+      <Text style={styles.dangerDescription}>
+        Permanently remove your Ubuntu Connect
+        account and profile.
+      </Text>
+    </View>
+  </View>
+
+  <TouchableOpacity
+    style={styles.deleteAccountButton}
+    onPress={() =>
+      navigation.navigate("DeleteAccount")
+    }
+  >
+    <Text style={styles.deleteAccountText}>
+      Delete My Account
+    </Text>
+  </TouchableOpacity>
+</View>
         <TouchableOpacity
           style={[
             styles.logoutButton,
@@ -237,36 +331,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
-  heading: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginTop: 20,
-    marginBottom: 20,
-  },
+heading: {
+  fontSize: 30,
+  fontWeight: "800",
+  color: "#14532D",
+  marginTop: 20,
+  marginBottom: 20,
+},
 
-  profileCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 24,
-    alignItems: "center",
-    marginBottom: 25,
 
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-  },
+profileCard: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 24,
+  padding: 24,
+  alignItems: "center",
+  marginBottom: 25,
+  borderWidth: 1,
+  borderColor: "#BBF7D0",
+  shadowColor: "#16A34A",
+  shadowOpacity: 0.08,
+  shadowRadius: 10,
+  elevation: 3,
+},
 
-  avatar: {
-    width: 95,
-    height: 95,
-    borderRadius: 50,
-    backgroundColor: "#2563EB",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
-  },
+avatar: {
+  width: 95,
+  height: 95,
+  borderRadius: 50,
+  backgroundColor: "#16A34A",
+  justifyContent: "center",
+  alignItems: "center",
+  marginBottom: 15,
+  borderWidth: 5,
+  borderColor: "#DCFCE7",
+  shadowColor: "#16A34A",
+  shadowOpacity: 0.18,
+  shadowRadius: 10,
+  elevation: 4,
+},
 
   avatarText: {
     color: "#FFFFFF",
@@ -299,12 +401,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1E293B",
-    marginBottom: 15,
-  },
+sectionTitle: {
+  fontSize: 20,
+  fontWeight: "700",
+  color: "#166534",
+  marginBottom: 15,
+  borderLeftWidth: 4,
+  borderLeftColor: "#22C55E",
+  paddingLeft: 10,
+},
+
 
   statsContainer: {
     flexDirection: "row",
@@ -312,49 +418,54 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
 
-  statCard: {
-    width: "48%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 24,
-    alignItems: "center",
-
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 3,
-  },
+statCard: {
+  width: "48%",
+  backgroundColor: "#F0FDF4",
+  borderRadius: 20,
+  paddingVertical: 24,
+  alignItems: "center",
+  borderWidth: 1,
+  borderColor: "#BBF7D0",
+  shadowColor: "#16A34A",
+  shadowOpacity: 0.06,
+  shadowRadius: 6,
+  elevation: 3,
+},
 
   statIcon: {
     fontSize: 30,
     marginBottom: 8,
   },
 
-  statNumber: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#2563EB",
-  },
+statNumber: {
+  fontSize: 26,
+  fontWeight: "800",
+  color: "#16A34A",
+},
 
-  statLabel: {
-    color: "#64748B",
-    marginTop: 5,
-    fontWeight: "600",
-  },
+statLabel: {
+  color: "#166534",
+  marginTop: 5,
+  fontWeight: "600",
+},
 
-  infoCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 25,
-  },
+infoCard: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 20,
+  padding: 18,
+  marginBottom: 25,
+  borderWidth: 1,
+  borderColor: "#DCFCE7",
+  borderTopWidth: 4,
+  borderTopColor: "#22C55E",
+},
 
-  infoLabel: {
-    color: "#64748B",
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
+infoLabel: {
+  color: "#16A34A",
+  fontSize: 13,
+  fontWeight: "700",
+  marginBottom: 4,
+},
 
   infoValue: {
     color: "#1E293B",
@@ -368,30 +479,32 @@ const styles = StyleSheet.create({
     marginVertical: 14,
   },
 
-  actionCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    marginBottom: 25,
-  },
+actionCard: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 20,
+  paddingHorizontal: 18,
+  marginBottom: 25,
+  borderWidth: 1,
+  borderColor: "#DCFCE7",
+},
 
-  actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 16,
-  },
-
+actionRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingVertical: 17,
+  paddingHorizontal: 4,
+},
   actionEmoji: {
     fontSize: 24,
     marginRight: 14,
   },
 
-  actionText: {
-    color: "#1E293B",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
+actionText: {
+  flex: 1,
+  color: "#166534",
+  fontSize: 16,
+  fontWeight: "700",
+},
   logoutButton: {
     backgroundColor: "#EF4444",
     paddingVertical: 16,
@@ -408,4 +521,106 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+greenHeaderBackground: {
+  position: "absolute",
+  top: 0,
+  left: -20,
+  right: -20,
+  height: 150,
+  backgroundColor: "#DCFCE7",
+  borderBottomLeftRadius: 35,
+  borderBottomRightRadius: 35,
+},
+
+impactMessage: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#F0FDF4",
+  borderRadius: 14,
+  paddingHorizontal: 13,
+  paddingVertical: 11,
+  marginTop: 18,
+  width: "100%",
+  borderWidth: 1,
+  borderColor: "#BBF7D0",
+},
+
+impactMessageIcon: {
+  fontSize: 20,
+  marginRight: 10,
+},
+
+impactMessageText: {
+  flex: 1,
+  color: "#166534",
+  fontSize: 12,
+  fontWeight: "600",
+  lineHeight: 18,
+},
+
+actionArrow: {
+  color: "#22C55E",
+  fontSize: 27,
+  fontWeight: "700",
+},
+dangerSectionTitle: {
+  color: "#B91C1C",
+  fontSize: 20,
+  fontWeight: "800",
+  borderLeftWidth: 4,
+  borderLeftColor: "#EF4444",
+  paddingLeft: 10,
+  marginBottom: 15,
+},
+
+dangerCard: {
+  backgroundColor: "#FEF2F2",
+  borderWidth: 1,
+  borderColor: "#FECACA",
+  borderRadius: 20,
+  padding: 18,
+  marginBottom: 20,
+},
+
+dangerInformation: {
+  flexDirection: "row",
+  alignItems: "flex-start",
+},
+
+dangerIcon: {
+  fontSize: 24,
+  marginRight: 12,
+},
+
+dangerTextContainer: {
+  flex: 1,
+},
+
+dangerTitle: {
+  color: "#991B1B",
+  fontSize: 16,
+  fontWeight: "800",
+},
+
+dangerDescription: {
+  color: "#B91C1C",
+  fontSize: 12,
+  lineHeight: 18,
+  marginTop: 4,
+},
+
+deleteAccountButton: {
+  minHeight: 48,
+  backgroundColor: "#DC2626",
+  borderRadius: 13,
+  justifyContent: "center",
+  alignItems: "center",
+  marginTop: 16,
+},
+
+deleteAccountText: {
+  color: "#FFFFFF",
+  fontSize: 14,
+  fontWeight: "800",
+},
 });

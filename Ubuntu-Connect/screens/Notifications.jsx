@@ -7,11 +7,10 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  SafeAreaViewBase,
+  Platform,
 } from "react-native";
-import {
-  SafeAreaView,
-} from "react-native-safe-area-context";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   collection,
@@ -26,10 +25,21 @@ import {
 
 import { auth, db } from "../firebaseConfig";
 
-const Notifications = () => {
+const Notifications = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [markingAll, setMarkingAll] = useState(false);
+
+  const showError = (title, message) => {
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined"
+    ) {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -48,21 +58,29 @@ const Notifications = () => {
     const unsubscribe = onSnapshot(
       notificationsQuery,
       (snapshot) => {
-        const notificationList = snapshot.docs.map((document) => ({
-          id: document.id,
-          ...document.data(),
-        }));
+        const notificationList = snapshot.docs.map(
+          (document) => ({
+            id: document.id,
+            ...document.data(),
+          })
+        );
 
         setNotifications(notificationList);
         setLoading(false);
       },
       (error) => {
-        console.log("NOTIFICATIONS ERROR:", error.message);
+        console.log(
+          "NOTIFICATIONS ERROR:",
+          error.code,
+          error.message
+        );
+
         setLoading(false);
 
-        Alert.alert(
+        showError(
           "Notifications Error",
-          "Notifications could not be loaded. Check the Expo terminal for details."
+          error.message ||
+            "Notifications could not be loaded."
         );
       }
     );
@@ -70,34 +88,80 @@ const Notifications = () => {
     return () => unsubscribe();
   }, []);
 
-  // Number of notifications that have not been read
   const unreadCount = notifications.filter(
     (item) => item.read === false
   ).length;
 
-  // Only updates Firestore when the notification is unread
   const markAsRead = async (notification) => {
-    if (notification.read === true) {
+    if (
+      !notification?.id ||
+      notification.read === true
+    ) {
       return;
     }
 
+    await updateDoc(
+      doc(db, "notifications", notification.id),
+      {
+        read: true,
+      }
+    );
+  };
+
+  const handleNotificationPress = async (
+    notification
+  ) => {
     try {
-      await updateDoc(
-        doc(db, "notifications", notification.id),
-        {
-          read: true,
-        }
-      );
+      await markAsRead(notification);
+
+      if (notification.type !== "message") {
+        return;
+      }
+
+      if (!notification.chatId) {
+        showError(
+          "Chat Unavailable",
+          "This notification does not contain a valid conversation."
+        );
+        return;
+      }
+
+      if (!notification.otherUserId) {
+        showError(
+          "Chat Unavailable",
+          "The message sender could not be found."
+        );
+        return;
+      }
+
+      navigation.navigate("Chat", {
+        chatId: notification.chatId,
+        otherUserId: notification.otherUserId,
+        otherUserName:
+          notification.otherUserName ||
+          notification.senderName ||
+          "Ubuntu Connect User",
+      });
     } catch (error) {
-      Alert.alert("Notification Error", error.message);
+      console.log(
+        "NOTIFICATION PRESS ERROR:",
+        error.code,
+        error.message
+      );
+
+      showError(
+        "Notification Error",
+        error.message ||
+          "The notification could not be opened."
+      );
     }
   };
 
-  // Marks every unread notification as read in one batch
   const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(
-      (item) => item.read === false
-    );
+    const unreadNotifications =
+      notifications.filter(
+        (item) => item.read === false
+      );
 
     if (unreadNotifications.length === 0) {
       return;
@@ -108,21 +172,33 @@ const Notifications = () => {
 
       const batch = writeBatch(db);
 
-      unreadNotifications.forEach((notification) => {
-        const notificationReference = doc(
-          db,
-          "notifications",
-          notification.id
-        );
+      unreadNotifications.forEach(
+        (notification) => {
+          const notificationReference = doc(
+            db,
+            "notifications",
+            notification.id
+          );
 
-        batch.update(notificationReference, {
-          read: true,
-        });
-      });
+          batch.update(notificationReference, {
+            read: true,
+          });
+        }
+      );
 
       await batch.commit();
     } catch (error) {
-      Alert.alert("Notification Error", error.message);
+      console.log(
+        "MARK ALL READ ERROR:",
+        error.code,
+        error.message
+      );
+
+      showError(
+        "Notification Error",
+        error.message ||
+          "Notifications could not be updated."
+      );
     } finally {
       setMarkingAll(false);
     }
@@ -187,11 +263,21 @@ const Notifications = () => {
     }
 
     const now = new Date();
-    const difference = now.getTime() - date.getTime();
 
-    const minutes = Math.floor(difference / 60000);
-    const hours = Math.floor(difference / 3600000);
-    const days = Math.floor(difference / 86400000);
+    const difference =
+      now.getTime() - date.getTime();
+
+    const minutes = Math.floor(
+      difference / 60000
+    );
+
+    const hours = Math.floor(
+      difference / 3600000
+    );
+
+    const days = Math.floor(
+      difference / 86400000
+    );
 
     if (minutes < 1) {
       return "Just now";
@@ -202,11 +288,15 @@ const Notifications = () => {
     }
 
     if (hours < 24) {
-      return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+      return `${hours} ${
+        hours === 1 ? "hour" : "hours"
+      } ago`;
     }
 
     if (days < 7) {
-      return `${days} ${days === 1 ? "day" : "days"} ago`;
+      return `${days} ${
+        days === 1 ? "day" : "days"
+      } ago`;
     }
 
     return date.toLocaleDateString();
@@ -215,7 +305,10 @@ const Notifications = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator
+          size="large"
+          color="#2563EB"
+        />
 
         <Text style={styles.loadingText}>
           Loading notifications...
@@ -225,11 +318,18 @@ const Notifications = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView
+      style={styles.container}
+      edges={["top", "left", "right"]}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.heading}>Notifications</Text>
+            <Text style={styles.heading}>
+              Notifications
+            </Text>
 
             <Text style={styles.headerSubtitle}>
               {unreadCount > 0
@@ -246,13 +346,16 @@ const Notifications = () => {
             <TouchableOpacity
               style={[
                 styles.markAllButton,
-                markingAll && styles.disabledButton,
+                markingAll &&
+                  styles.disabledButton,
               ]}
               onPress={markAllAsRead}
               disabled={markingAll}
             >
               <Text style={styles.markAll}>
-                {markingAll ? "Updating..." : "Mark all read"}
+                {markingAll
+                  ? "Updating..."
+                  : "Mark all read"}
               </Text>
             </TouchableOpacity>
           )}
@@ -260,8 +363,12 @@ const Notifications = () => {
 
         {notifications.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-              <Text style={styles.emptyIcon}>🔔</Text>
+            <View
+              style={styles.emptyIconContainer}
+            >
+              <Text style={styles.emptyIcon}>
+                🔔
+              </Text>
             </View>
 
             <Text style={styles.emptyTitle}>
@@ -269,8 +376,9 @@ const Notifications = () => {
             </Text>
 
             <Text style={styles.emptyText}>
-              Updates about your donations, help requests, and account
-              activity will appear here.
+              Updates about your donations, help
+              requests, messages, and account activity
+              will appear here.
             </Text>
           </View>
         ) : (
@@ -280,15 +388,19 @@ const Notifications = () => {
               activeOpacity={0.8}
               style={[
                 styles.notificationCard,
-                item.read === false && styles.unreadCard,
+                item.read === false &&
+                  styles.unreadCard,
               ]}
-              onPress={() => markAsRead(item)}
+              onPress={() =>
+                handleNotificationPress(item)
+              }
             >
               <View
                 style={[
                   styles.iconContainer,
                   {
-                    backgroundColor: getIconBackground(item.type),
+                    backgroundColor:
+                      getIconBackground(item.type),
                   },
                 ]}
               >
@@ -302,34 +414,54 @@ const Notifications = () => {
                   <Text
                     style={[
                       styles.title,
-                      item.read === false && styles.unreadTitle,
+                      item.read === false &&
+                        styles.unreadTitle,
                     ]}
                   >
-                    {item.title || "Ubuntu Connect Update"}
+                    {item.title ||
+                      "Ubuntu Connect Update"}
                   </Text>
 
                   {item.read === false && (
-                    <View style={styles.unreadDot} />
+                    <View
+                      style={styles.unreadDot}
+                    />
                   )}
                 </View>
 
                 <Text style={styles.message}>
-                  {item.message || "You have a new update."}
+                  {item.message ||
+                    "You have a new update."}
                 </Text>
 
-                <View style={styles.notificationFooter}>
+                <View
+                  style={styles.notificationFooter}
+                >
                   <Text style={styles.time}>
-                    {formatNotificationTime(item.createdAt)}
+                    {formatNotificationTime(
+                      item.createdAt
+                    )}
                   </Text>
 
-                  <Text
-                    style={[
-                      styles.readStatus,
-                      item.read === false && styles.unreadStatus,
-                    ]}
-                  >
-                    {item.read === false ? "Unread" : "Read"}
-                  </Text>
+                  {item.type === "message" ? (
+                    <Text
+                      style={styles.openChatText}
+                    >
+                      Open conversation ›
+                    </Text>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.readStatus,
+                        item.read === false &&
+                          styles.unreadStatus,
+                      ]}
+                    >
+                      {item.read === false
+                        ? "Unread"
+                        : "Read"}
+                    </Text>
+                  )}
                 </View>
               </View>
             </TouchableOpacity>
@@ -497,6 +629,12 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     fontSize: 11,
     fontWeight: "600",
+  },
+
+  openChatText: {
+    color: "#2563EB",
+    fontSize: 11,
+    fontWeight: "700",
   },
 
   unreadStatus: {

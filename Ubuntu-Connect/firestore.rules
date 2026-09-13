@@ -31,18 +31,24 @@ service cloud.firestore {
         ).data.participantIds;
     }
 
-    match /users/{userId} {
-      allow read: if isSignedIn();
+  match /users/{userId} {
+  allow read: if isSignedIn();
 
-      allow create: if isSignedIn()
-        && request.auth.uid == userId;
+  allow create: if isSignedIn()
+    && request.auth.uid == userId;
 
-      allow update: if isSignedIn()
-        && request.auth.uid == userId
-        && request.resource.data.role == resource.data.role;
+  allow update: if isSignedIn()
+    && request.auth.uid == userId
+    && request.resource.data.role
+      == resource.data.role;
 
-      allow delete: if isAdmin();
-    }
+  allow delete: if isSignedIn()
+    && (
+      request.auth.uid == userId
+      || isAdmin()
+    );
+}
+
 
     match /donations/{donationId} {
       allow read: if isSignedIn();
@@ -78,7 +84,25 @@ service cloud.firestore {
       allow read: if isSignedIn()
         && resource.data.userId == request.auth.uid;
 
-      allow create: if isAdmin();
+      allow create: if isSignedIn()
+        && (
+          isAdmin()
+          ||
+          (
+            request.resource.data.type == "message"
+            && request.resource.data.senderId == request.auth.uid
+            && request.resource.data.userId != request.auth.uid
+            && request.resource.data.chatId is string
+
+            && request.auth.uid in get(
+              /databases/$(database)/documents/chats/$(request.resource.data.chatId)
+            ).data.participantIds
+
+            && request.resource.data.userId in get(
+              /databases/$(database)/documents/chats/$(request.resource.data.chatId)
+            ).data.participantIds
+          )
+        );
 
       allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
@@ -87,6 +111,50 @@ service cloud.firestore {
       allow delete: if isSignedIn()
         && resource.data.userId == request.auth.uid;
     }
+    match /campaigns/{campaignId} {
+  // Any logged-in user may view campaigns
+  allow read: if isSignedIn();
+
+  // Only admins may create campaigns
+  allow create: if isAdmin()
+    && request.resource.data.createdBy == request.auth.uid
+    && request.resource.data.title is string
+    && request.resource.data.description is string
+    && request.resource.data.organization is string
+    && request.resource.data.location is string
+    && request.resource.data.campaignType in ["Items", "Money"]
+    && request.resource.data.status == "Active"
+    && request.resource.data.urgent is bool;
+
+  // Only admins may update campaigns
+  allow update: if isAdmin()
+    && request.resource.data.createdBy
+      == resource.data.createdBy;
+
+  // Only admins may delete campaigns
+  allow delete: if isAdmin();
+}
+match /charities/{charityId} {
+  allow read: if isSignedIn();
+
+  allow create: if isAdmin()
+    && request.resource.data.createdBy
+      == request.auth.uid
+    && request.resource.data.name is string
+    && request.resource.data.type is string
+    && request.resource.data.description is string
+    && request.resource.data.location is string
+    && request.resource.data.address is string
+    && request.resource.data.needs is list
+    && request.resource.data.services is list
+    && request.resource.data.verified is bool;
+
+  allow update: if isAdmin()
+    && request.resource.data.createdBy
+      == resource.data.createdBy;
+
+  allow delete: if isAdmin();
+}
 
     match /chats/{chatId} {
       allow create: if isSignedIn()
@@ -110,9 +178,30 @@ service cloud.firestore {
         allow create: if isChatParticipant(chatId)
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.receiverId is string
-          && request.resource.data.text is string;
+          && request.resource.data.receiverId
+            != request.auth.uid
+          && request.resource.data.receiverId in get(
+            /databases/$(database)/documents/chats/$(chatId)
+          ).data.participantIds
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000
+          && request.resource.data.read == false;
 
-        allow update: if isChatParticipant(chatId);
+        allow update: if isChatParticipant(chatId)
+
+          // Only the receiver can mark the message as read
+          && resource.data.receiverId == request.auth.uid
+
+          // Only the read field may change
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly(["read"])
+
+          // The read value must change from false to true
+          && resource.data.read == false
+          && request.resource.data.read == true;
 
         allow delete: if isAdmin();
       }
