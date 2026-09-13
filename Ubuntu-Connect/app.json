@@ -6,24 +6,27 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-
-    "ios": {
-      "supportsTablet": true
-    },
-
     "android": {
       "adaptiveIcon": {
+        "package": "com.sabelo073.ubuntuconnect",
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       }
     },
-
+    "ios": {
+  "supportsTablet": true,
+  "bundleIdentifier": "com.sabelo073.ubuntuconnect"
+},
     "web": {
       "favicon": "./assets/favicon.png"
     },
-
     "plugins": [
       "expo-status-bar"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "629d2b41-8cef-40f7-bdf4-051626b6cfa4"
+      }
+    }
   }
 }
