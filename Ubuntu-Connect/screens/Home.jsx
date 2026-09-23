@@ -26,6 +26,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "../firebaseConfig";
+import { Ionicons } from "@expo/vector-icons";
 
 const Home = ({ navigation }) => {
   const [donations, setDonations] = useState([]);
@@ -81,159 +82,158 @@ const Home = ({ navigation }) => {
     };
   }, []);
 
- const startHelpConversation = async (request) => {
-  const currentUser = auth.currentUser;
+  const startHelpConversation = async (request) => {
+    const currentUser = auth.currentUser;
 
-  if (!currentUser) {
-    Alert.alert(
-      "Login Required",
-      "Please log in before offering help."
-    );
-    return;
-  }
-
-  if (!request?.id || !request?.userId) {
-    Alert.alert(
-      "Chat Error",
-      "The request or request owner could not be found."
-    );
-    return;
-  }
-
-  if (request.userId === currentUser.uid) {
-    Alert.alert(
-      "Your Request",
-      "You cannot start a conversation with yourself."
-    );
-    return;
-  }
-
-  try {
-    setStartingChatId(request.id);
-
-    const currentUserReference = doc(
-      db,
-      "users",
-      currentUser.uid
-    );
-
-    const requestOwnerReference = doc(
-      db,
-      "users",
-      request.userId
-    );
-
-    const [
-      currentUserSnapshot,
-      requestOwnerSnapshot,
-    ] = await Promise.all([
-      getDoc(currentUserReference),
-      getDoc(requestOwnerReference),
-    ]);
-
-    if (!requestOwnerSnapshot.exists()) {
+    if (!currentUser) {
       Alert.alert(
-        "Chat Error",
-        "The request owner's profile could not be found."
+        "Login Required",
+        "Please log in before offering help."
       );
       return;
     }
 
-    const currentUserData = currentUserSnapshot.exists()
-      ? currentUserSnapshot.data()
-      : {};
+    if (!request?.id || !request?.userId) {
+      Alert.alert(
+        "Chat Error",
+        "The request or request owner could not be found."
+      );
+      return;
+    }
 
-    const requestOwnerData =
-      requestOwnerSnapshot.data();
+    if (request.userId === currentUser.uid) {
+      Alert.alert(
+        "Your Request",
+        "You cannot start a conversation with yourself."
+      );
+      return;
+    }
 
-    const currentUserName =
-      currentUserData.fullName ||
-      currentUser.displayName ||
-      currentUser.email ||
-      "Ubuntu Connect User";
+    try {
+      setStartingChatId(request.id);
 
-    const requestOwnerName =
-      requestOwnerData.fullName ||
-      requestOwnerData.email ||
-      "Ubuntu Connect User";
+      const currentUserReference = doc(
+        db,
+        "users",
+        currentUser.uid
+      );
 
-    const participantIds = [
-      currentUser.uid,
-      request.userId,
-    ].sort();
+      const requestOwnerReference = doc(
+        db,
+        "users",
+        request.userId
+      );
 
-    const chatId =
-      `${participantIds.join("_")}_${request.id}`;
+      const [
+        currentUserSnapshot,
+        requestOwnerSnapshot,
+      ] = await Promise.all([
+        getDoc(currentUserReference),
+        getDoc(requestOwnerReference),
+      ]);
 
-    const chatReference = doc(
-      db,
-      "chats",
-      chatId
-    );
-
-    /*
-      No getDoc(chatReference) is needed here.
-
-      setDoc with merge creates a chat if it is new,
-      and safely reuses the chat if it already exists.
-    */
-    await setDoc(
-      chatReference,
-      {
-        participantIds,
-
-        participantNames: {
-          [currentUser.uid]: currentUserName,
-          [request.userId]: requestOwnerName,
-        },
-
-        requestId: request.id,
-        requestItem: request.itemNeeded || "",
-        requestCategory: request.category || "",
-
-        lastMessage: "",
-        lastMessageAt: serverTimestamp(),
-        lastSenderId: "",
-
-        unreadCounts: {
-          [currentUser.uid]: 0,
-          [request.userId]: 0,
-        },
-
-        createdAt: serverTimestamp(),
-      },
-      {
-        merge: true,
+      if (!requestOwnerSnapshot.exists()) {
+        Alert.alert(
+          "Chat Error",
+          "The request owner's profile could not be found."
+        );
+        return;
       }
-    );
 
-    navigation.navigate("Chat", {
-      chatId,
-      otherUserId: request.userId,
-      otherUserName: requestOwnerName,
-    });
-  } catch (error) {
-    console.log(
-      "START CHAT ERROR CODE:",
-      error.code
-    );
+      const currentUserData = currentUserSnapshot.exists()
+        ? currentUserSnapshot.data()
+        : {};
 
-    console.log(
-      "START CHAT ERROR MESSAGE:",
-      error.message
-    );
+      const requestOwnerData =
+        requestOwnerSnapshot.data();
 
-    Alert.alert(
-      "Chat Error",
-      `${error.code || "Unknown error"}\n\n${
-        error.message ||
+      const currentUserName =
+        currentUserData.fullName ||
+        currentUser.displayName ||
+        currentUser.email ||
+        "Ubuntu Connect User";
+
+      const requestOwnerName =
+        requestOwnerData.fullName ||
+        requestOwnerData.email ||
+        "Ubuntu Connect User";
+
+      const participantIds = [
+        currentUser.uid,
+        request.userId,
+      ].sort();
+
+      const chatId =
+        `${participantIds.join("_")}_${request.id}`;
+
+      const chatReference = doc(
+        db,
+        "chats",
+        chatId
+      );
+
+      /*
+        No getDoc(chatReference) is needed here.
+  
+        setDoc with merge creates a chat if it is new,
+        and safely reuses the chat if it already exists.
+      */
+      await setDoc(
+        chatReference,
+        {
+          participantIds,
+
+          participantNames: {
+            [currentUser.uid]: currentUserName,
+            [request.userId]: requestOwnerName,
+          },
+
+          requestId: request.id,
+          requestItem: request.itemNeeded || "",
+          requestCategory: request.category || "",
+
+          lastMessage: "",
+          lastMessageAt: serverTimestamp(),
+          lastSenderId: "",
+
+          unreadCounts: {
+            [currentUser.uid]: 0,
+            [request.userId]: 0,
+          },
+
+          createdAt: serverTimestamp(),
+        },
+        {
+          merge: true,
+        }
+      );
+
+      navigation.navigate("Chat", {
+        chatId,
+        otherUserId: request.userId,
+        otherUserName: requestOwnerName,
+      });
+    } catch (error) {
+      console.log(
+        "START CHAT ERROR CODE:",
+        error.code
+      );
+
+      console.log(
+        "START CHAT ERROR MESSAGE:",
+        error.message
+      );
+
+      Alert.alert(
+        "Chat Error",
+        `${error.code || "Unknown error"}\n\n${error.message ||
         "The conversation could not be started."
-      }`
-    );
-  } finally {
-    setStartingChatId(null);
-  }
-};
+        }`
+      );
+    } finally {
+      setStartingChatId(null);
+    }
+  };
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -262,7 +262,15 @@ const Home = ({ navigation }) => {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Hello 👋</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.greeting}>Hello </Text>
+            <Ionicons
+              name="hand-left"
+              size={18}
+              color="#F59E0B"
+            />
+          </View>
+
           <Text style={styles.name}>Change Maker</Text>
         </View>
 
@@ -313,7 +321,11 @@ const Home = ({ navigation }) => {
             style={styles.actionCard}
             onPress={() => navigation.navigate("Donate")}
           >
-            <Text style={styles.actionEmoji}>🎁</Text>
+            <Ionicons
+              name="gift"
+              size={34}
+              color="#2563EB"
+            />
             <Text style={styles.actionText}>Donate</Text>
           </TouchableOpacity>
 
@@ -321,7 +333,11 @@ const Home = ({ navigation }) => {
             style={styles.actionCard}
             onPress={() => navigation.navigate("RequestHelp")}
           >
-            <Text style={styles.actionEmoji}>🙏</Text>
+            <Ionicons
+              name="help-circle"
+              size={34}
+              color="#22C55E"
+            />
             <Text style={styles.actionText}>Request</Text>
           </TouchableOpacity>
 
@@ -329,7 +345,12 @@ const Home = ({ navigation }) => {
             style={styles.actionCard}
             onPress={() => navigation.navigate("Campaigns")}
           >
-            <Text style={styles.actionEmoji}>📢</Text>
+            <Ionicons
+              name="megaphone"
+              size={34}
+              color="#F97316"
+            />
+
             <Text style={styles.actionText}>Campaigns</Text>
           </TouchableOpacity>
 
@@ -337,7 +358,11 @@ const Home = ({ navigation }) => {
             style={styles.actionCard}
             onPress={() => navigation.navigate("Charities")}
           >
-            <Text style={styles.actionEmoji}>🤝</Text>
+            <Ionicons
+              name="people"
+              size={34}
+              color="#8B5CF6"
+            />
             <Text style={styles.actionText}>Charities</Text>
           </TouchableOpacity>
         </View>
@@ -348,9 +373,26 @@ const Home = ({ navigation }) => {
         </Text>
 
         <View style={styles.needCard}>
-          <Text style={styles.needTitle}>
-            🧥 Winter Blankets Needed
-          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons
+              name="shirt"
+              size={20}
+              color="#2563EB"
+            />
+            <Text
+              style={[
+                styles.needTitle,
+                { marginLeft: 8 },
+              ]}
+            >
+              Winter Products Needed
+            </Text>
+          </View>
 
           <Text style={styles.needLocation}>
             Johannesburg Community Shelter
@@ -398,16 +440,51 @@ const Home = ({ navigation }) => {
                   />
                 ) : (
                   <View style={styles.noImageBox}>
-                    <Text style={styles.noImageText}>
-                      🎁 No image added
-                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Ionicons
+                        name="image-outline"
+                        size={20}
+                        color="#64748B"
+                      />
+                      <Text
+                        style={[
+                          styles.noImageText,
+                          { marginLeft: 6 },
+                        ]}
+                      >
+                        No image added
+                      </Text>
+                    </View>
                   </View>
                 )}
 
                 <View style={styles.donationTopRow}>
-                  <Text style={styles.donationTitle}>
-                    🎁 {donation.itemName}
-                  </Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <Ionicons
+                      name="gift"
+                      size={18}
+                      color="#2563EB"
+                    />
+                    <Text
+                      style={[
+                        styles.donationTitle,
+                        { marginLeft: 6 },
+                      ]}
+                    >
+                      {donation.itemName}
+                    </Text>
+                  </View>
 
                   <View
                     style={[
@@ -437,9 +514,27 @@ const Home = ({ navigation }) => {
                   {donation.description}
                 </Text>
 
-                <Text style={styles.donationLocation}>
-                  📍 {donation.address}
-                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 6,
+                  }}
+                >
+                  <Ionicons
+                    name="location"
+                    size={14}
+                    color="#475569"
+                  />
+                  <Text
+                    style={[
+                      styles.donationLocation,
+                      { marginLeft: 4 }
+                    ]}
+                  >
+                    {donation.address}
+                  </Text>
+                </View>
 
                 <Text style={styles.donationMethod}>
                   Method: {donation.deliveryMethod}
@@ -478,22 +573,40 @@ const Home = ({ navigation }) => {
                 style={styles.requestCard}
               >
                 <View style={styles.requestTopRow}>
-                  <Text style={styles.requestTitle}>
-                    🙏 {request.itemNeeded}
-                  </Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <Ionicons
+                      name="help-circle"
+                      size={18}
+                      color="#22C55E"
+                    />
+                    <Text
+                      style={[
+                        styles.requestTitle,
+                        { marginLeft: 6 },
+                      ]}
+                    >
+                      {request.itemNeeded}
+                    </Text>
+                  </View>
 
                   <View
                     style={[
                       styles.requestBadge,
                       request.urgency === "Urgent" &&
-                        styles.urgentBadge,
+                      styles.urgentBadge,
                     ]}
                   >
                     <Text
                       style={[
                         styles.requestBadgeText,
                         request.urgency === "Urgent" &&
-                          styles.urgentBadgeText,
+                        styles.urgentBadgeText,
                       ]}
                     >
                       {request.urgency || "Normal"}
@@ -513,9 +626,27 @@ const Home = ({ navigation }) => {
                   {request.description}
                 </Text>
 
-                <Text style={styles.requestLocation}>
-                  📍 {request.location}
-                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginBottom: 8,
+                  }}
+                >
+                  <Ionicons
+                    name="location"
+                    size={14}
+                    color="#475569"
+                  />
+                  <Text
+                    style={[
+                      styles.requestLocation,
+                      { marginLeft: 4 }
+                    ]}
+                  >
+                    {request.location}
+                  </Text>
+                </View>
 
                 <View style={styles.requestStatusRow}>
                   <Text style={styles.requestStatusLabel}>
@@ -550,7 +681,7 @@ const Home = ({ navigation }) => {
                     style={[
                       styles.offerHelpButton,
                       isStartingChat &&
-                        styles.disabledButton,
+                      styles.disabledButton,
                     ]}
                     onPress={() =>
                       startHelpConversation(request)
@@ -571,9 +702,26 @@ const Home = ({ navigation }) => {
                         </Text>
                       </View>
                     ) : (
-                      <Text style={styles.offerHelpButtonText}>
-                        💬 Offer Help
-                      </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                        }}
+                      >
+                        <Ionicons
+                          name="chatbubble"
+                          size={18}
+                          color="#FFFFFF"
+                        />
+                        <Text
+                          style={[
+                            styles.offerHelpButtonText,
+                            { marginLeft: 8 },
+                          ]}
+                        >
+                          Offer Help
+                        </Text>
+                      </View>
                     )}
                   </TouchableOpacity>
                 ) : (
@@ -634,36 +782,62 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    marginBottom: 24,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 
   greeting: {
-    color: "#64748B",
-    fontSize: 16,
+    color: "#94A3B8",
+    fontSize: 15,
+    fontWeight: "500",
+    letterSpacing: 0.3,
   },
 
   name: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1E293B",
-    marginTop: 3,
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#0F172A",
+    marginTop: 4,
+  },
+
+  profileAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: "#EC4899",
   },
 
   impactCard: {
-    backgroundColor: "#2563EB",
     marginHorizontal: 20,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 25,
+    borderRadius: 30,
+    padding: 24,
+    marginBottom: 28,
+
+    backgroundColor: "#7C3AED",
+
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+
+    shadowColor: "#2563EB",
+    shadowOffset: {
+      width: 0,
+      height: 12,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 12,
   },
 
   cardTitle: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "700",
-    marginBottom: 20,
+    marginBottom: 24,
   },
 
   statsContainer: {
@@ -678,23 +852,23 @@ const styles = StyleSheet.create({
 
   statNumber: {
     color: "#FFFFFF",
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 28,
+    fontWeight: "800",
   },
 
   statText: {
-    color: "#E2E8F0",
-    marginTop: 5,
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 6,
     fontSize: 12,
     textAlign: "center",
   },
 
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#0F172A",
     marginHorizontal: 20,
-    marginBottom: 15,
+    marginBottom: 18,
   },
 
   actionGrid: {
@@ -702,97 +876,121 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    marginBottom: 25,
+    marginBottom: 28,
   },
 
   actionCard: {
     width: "48%",
     backgroundColor: "#FFFFFF",
-    paddingVertical: 25,
-    borderRadius: 20,
+    paddingVertical: 28,
+
+    borderRadius: 28,
     alignItems: "center",
-    marginBottom: 12,
-    shadowColor: "#000000",
+    marginBottom: 14,
+
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+
+    shadowColor: "#0F172A",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 4,
   },
-
-  actionEmoji: {
-    fontSize: 30,
-  },
-
   actionText: {
-    marginTop: 10,
-    fontWeight: "600",
+    marginTop: 14,
+    fontWeight: "700",
     color: "#1E293B",
+    fontSize: 15,
   },
 
   needCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
-    borderRadius: 20,
-    padding: 20,
+
+    borderRadius: 28,
+    padding: 22,
     marginBottom: 25,
+
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+
+    shadowColor: "#0F172A",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 4,
   },
 
   needTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontSize: 19,
+    fontWeight: "800",
+    color: "#0F172A",
   },
 
   needLocation: {
     color: "#64748B",
     marginTop: 10,
-    marginBottom: 15,
+    marginBottom: 18,
+    fontSize: 14,
   },
 
   donateBtn: {
     backgroundColor: "#22C55E",
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: "center",
+
+    shadowColor: "#22C55E",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
   },
 
   donateBtnText: {
     color: "#FFFFFF",
-    fontWeight: "700",
+    fontWeight: "800",
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
 
   donationCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
-    borderRadius: 18,
+
+    borderRadius: 28,
     padding: 18,
-    marginBottom: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 3,
+    marginBottom: 16,
+
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+
+    shadowColor: "#7C3AED",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
   },
 
   donationImage: {
     width: "100%",
-    height: 170,
-    borderRadius: 16,
-    marginBottom: 12,
+    height: 190,
+    borderRadius: 22,
+    marginBottom: 14,
     backgroundColor: "#E2E8F0",
-  },
-
-  noImageBox: {
-    width: "100%",
-    height: 120,
-    borderRadius: 16,
-    marginBottom: 12,
-    backgroundColor: "#F1F5F9",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  noImageText: {
-    color: "#64748B",
-    fontWeight: "600",
   },
 
   donationTopRow: {
@@ -803,28 +1001,29 @@ const styles = StyleSheet.create({
   },
 
   donationTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#0F172A",
     flex: 1,
-    marginRight: 8,
+    marginRight: 10,
   },
 
   donationCategory: {
-    color: "#2563EB",
-    fontWeight: "600",
-    marginBottom: 6,
+    color: "#7C3AED",
+    fontWeight: "700",
+    marginBottom: 8,
   },
 
   donationDescription: {
     color: "#64748B",
-    lineHeight: 20,
-    marginBottom: 8,
+    lineHeight: 22,
+    marginBottom: 10,
+    fontSize: 14,
   },
 
   donationLocation: {
     color: "#475569",
-    marginBottom: 4,
+    marginBottom: 6,
   },
 
   donationMethod: {
@@ -832,15 +1031,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  statusBadge: {
+  featuredBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#FCE7F3",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
+    marginBottom: 10,
+  },
+
+  featuredBadgeText: {
+    color: "#EC4899",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 30,
   },
 
   statusText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
   },
 
   pendingStatusBadge: {
@@ -870,15 +1084,22 @@ const styles = StyleSheet.create({
   requestCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 12,
-    shadowColor: "#000000",
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 3,
-    borderLeftWidth: 4,
+
+    borderRadius: 28,
+    padding: 20,
+    marginBottom: 15,
+
+    borderLeftWidth: 5,
     borderLeftColor: "#2563EB",
+
+    shadowColor: "#0F172A",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 4,
   },
 
   requestTopRow: {
@@ -889,23 +1110,24 @@ const styles = StyleSheet.create({
   },
 
   requestTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#0F172A",
     flex: 1,
-    marginRight: 8,
+    marginRight: 10,
   },
 
   requestCategory: {
-    color: "#2563EB",
-    fontWeight: "600",
-    marginBottom: 6,
+    color: "#7C3AED",
+    fontWeight: "700",
+    marginBottom: 8,
   },
 
   requestDescription: {
     color: "#64748B",
-    lineHeight: 20,
-    marginBottom: 8,
+    lineHeight: 22,
+    marginBottom: 10,
+    fontSize: 14,
   },
 
   requestLocation: {
@@ -916,7 +1138,7 @@ const styles = StyleSheet.create({
   requestStatusRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 3,
+    marginTop: 6,
   },
 
   requestStatusLabel: {
@@ -927,15 +1149,15 @@ const styles = StyleSheet.create({
 
   requestBadge: {
     backgroundColor: "#DBEAFE",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 30,
   },
 
   requestBadgeText: {
     color: "#2563EB",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "800",
   },
 
   urgentBadge: {
@@ -948,16 +1170,26 @@ const styles = StyleSheet.create({
 
   offerHelpButton: {
     backgroundColor: "#22C55E",
-    borderRadius: 12,
-    paddingVertical: 13,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: "center",
-    marginTop: 15,
+    marginTop: 18,
+
+    shadowColor: "#22C55E",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
   },
 
   offerHelpButtonText: {
     color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 14,
+    fontWeight: "800",
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
 
   disabledButton: {
@@ -966,69 +1198,135 @@ const styles = StyleSheet.create({
 
   loadingButtonContent: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
   },
 
   ownRequestNotice: {
     backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    paddingVertical: 11,
+    borderRadius: 14,
+    paddingVertical: 12,
     alignItems: "center",
     marginTop: 15,
   },
 
   ownRequestNoticeText: {
     color: "#2563EB",
-    fontWeight: "600",
-    fontSize: 13,
+    fontWeight: "700",
   },
 
   rejectedNotice: {
     backgroundColor: "#FEE2E2",
-    borderRadius: 12,
-    paddingVertical: 11,
+    borderRadius: 14,
+    paddingVertical: 12,
     alignItems: "center",
     marginTop: 15,
   },
 
   rejectedNoticeText: {
     color: "#DC2626",
-    fontWeight: "600",
-    fontSize: 13,
+    fontWeight: "700",
   },
 
   emptyCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 20,
+
+    borderRadius: 28,
+    padding: 30,
     alignItems: "center",
+
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 4,
   },
 
   emptyText: {
     color: "#64748B",
-    fontWeight: "500",
+    fontWeight: "600",
+    fontSize: 14,
   },
 
   charityCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 20,
-    marginBottom: 12,
-    padding: 18,
-    borderRadius: 18,
+    marginBottom: 14,
+    padding: 20,
+
+    borderRadius: 28,
+
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 4,
   },
 
   charityName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#0F172A",
   },
 
   charityAddress: {
-    marginTop: 4,
+    marginTop: 6,
     color: "#64748B",
+    fontSize: 14,
+  },
+
+  verifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+
+    backgroundColor: "#FCE7F3",
+
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+
+    marginTop: 8,
+  },
+
+  verifiedBadgeText: {
+    color: "#EC4899",
+    fontSize: 12,
+    fontWeight: "800",
+    marginLeft: 4,
+  },
+
+  notificationBadge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+
+    minWidth: 22,
+    height: 22,
+
+    backgroundColor: "#EC4899",
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    borderRadius: 11,
+
+    shadowColor: "#EC4899",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  notificationBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
   },
 });

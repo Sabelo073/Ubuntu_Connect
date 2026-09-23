@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import {
   collection,
@@ -234,11 +235,13 @@ const Campaigns = ({ navigation }) => {
 
         {campaigns.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-              <Text style={styles.emptyIcon}>
-                📢
-              </Text>
-            </View>
+           <View style={styles.emptyIconContainer}>
+  <Ionicons
+    name="megaphone"
+    size={52}
+    color="#F59E0B"
+  />
+</View>
 
             <Text style={styles.emptyTitle}>
               No Campaigns Yet
@@ -277,11 +280,16 @@ const Campaigns = ({ navigation }) => {
                     <View
                       style={styles.urgentBadge}
                     >
-                      <Text
-                        style={styles.urgentText}
-                      >
-                        🚨 Urgent
-                      </Text>
+                      <View style={styles.urgentContent}>
+  <Ionicons
+    name="warning"
+    size={14}
+    color="#DC2626"
+  />
+  <Text style={styles.urgentText}>
+    Urgent
+  </Text>
+</View>
                     </View>
                   )}
 
@@ -322,9 +330,16 @@ const Campaigns = ({ navigation }) => {
                 ) : null}
 
                 {campaign.location ? (
-                  <Text style={styles.location}>
-                    📍 {campaign.location}
-                  </Text>
+                 <View style={styles.locationRow}>
+  <Ionicons
+    name="location"
+    size={14}
+    color="#475569"
+  />
+  <Text style={styles.location}>
+    {campaign.location}
+  </Text>
+</View>
                 ) : null}
 
                 <View style={styles.statsContainer}>
@@ -545,11 +560,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  location: {
-    color: "#475569",
-    fontSize: 13,
-    marginBottom: 18,
-  },
+location: {
+  color: "#475569",
+  fontSize: 13,
+  marginLeft: 4,
+},
 
   statsContainer: {
     flexDirection: "row",
@@ -663,4 +678,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     lineHeight: 23,
   },
+  urgentContent: {
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+},
+
+locationRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 18,
+},
 });

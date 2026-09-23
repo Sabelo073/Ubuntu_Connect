@@ -12,7 +12,7 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { signOut } from "firebase/auth";
+
 
 import {
   collection,
@@ -29,6 +29,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "../firebaseConfig";
+import { useSession } from "../context/SessionContext"
 
 const AdminDashboard = ({ navigation }) => {
   const [adminData, setAdminData] = useState(null);
@@ -40,6 +41,10 @@ const AdminDashboard = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
 
   const [processingId, setProcessingId] = useState(null);
+ const {
+endSession,
+writeAuditLog,
+} = useSession();
 
   /*
     Displays a message on Web, Android, and iOS.
@@ -336,6 +341,28 @@ const unsubscribeCharities = onSnapshot(
           reviewedBy: auth.currentUser?.uid || "",
         }
       );
+      await writeAuditLog({
+  action:
+    newStatus === "Approved"
+      ? "DONATION_APPROVED"
+      : "DONATION_REJECTED",
+
+  description:
+    `Administrator changed donation "${donation.itemName}" ` +
+    `to ${newStatus}.`,
+
+  actorRole: "Admin",
+  targetType: "donation",
+  targetId: donation.id,
+
+  metadata: {
+    itemName: donation.itemName || "",
+    previousStatus:
+      donation.status || "Pending",
+    newStatus,
+    ownerId: donation.userId || "",
+  },
+});
 
       await createNotification(
         donation.userId,
@@ -399,6 +426,29 @@ const unsubscribeCharities = onSnapshot(
           reviewedBy: auth.currentUser?.uid || "",
         }
       );
+
+      await writeAuditLog({
+  action:
+    newStatus === "Approved"
+      ? "REQUEST_APPROVED"
+      : "REQUEST_REJECTED",
+
+  description:
+    `Administrator changed request "${request.itemNeeded}" ` +
+    `to ${newStatus}.`,
+
+  actorRole: "Admin",
+  targetType: "request",
+  targetId: request.id,
+
+  metadata: {
+    itemNeeded: request.itemNeeded || "",
+    previousStatus:
+      request.status || "Pending",
+    newStatus,
+    ownerId: request.userId || "",
+  },
+});
 
       await createNotification(
         request.userId,
@@ -467,6 +517,24 @@ const unsubscribeCharities = onSnapshot(
         "Deleted",
         "Donation deleted successfully."
       );
+
+           await writeAuditLog({
+  action: "DONATION_DELETED",
+
+  description:
+    `Administrator deleted donation "${donation.itemName}".`,
+
+  actorRole: "Admin",
+  targetType: "donation",
+  targetId: donation.id,
+
+  metadata: {
+    itemName: donation.itemName || "",
+    ownerId: donation.userId || "",
+    previousStatus:
+      donation.status || "Pending",
+  },
+});
     } catch (error) {
       console.log(
         "DONATION DELETE ERROR:",
@@ -561,6 +629,24 @@ const unsubscribeCharities = onSnapshot(
         "Deleted",
         "Request deleted successfully."
       );
+         await writeAuditLog({
+  action: "REQUEST_DELETED",
+
+  description:
+    `Administrator deleted request "${request.itemNeeded}".`,
+
+  actorRole: "Admin",
+  targetType: "request",
+  targetId: request.id,
+
+  metadata: {
+    itemNeeded: request.itemNeeded || "",
+    ownerId: request.userId || "",
+    previousStatus:
+      request.status || "Pending",
+  },
+});
+
     } catch (error) {
       console.log(
         "REQUEST DELETE ERROR:",
@@ -642,6 +728,25 @@ const unsubscribeCharities = onSnapshot(
       "Campaign Updated",
       `"${campaign.title}" is now ${newStatus}.`
     );
+
+       await writeAuditLog({
+  action: "CAMPAIGN_STATUS_UPDATED",
+
+  description:
+    `Administrator changed campaign "${campaign.title}" ` +
+    `to ${newStatus}.`,
+
+  actorRole: "Admin",
+  targetType: "campaign",
+  targetId: campaign.id,
+
+  metadata: {
+    campaignTitle: campaign.title || "",
+    previousStatus:
+      campaign.status || "Active",
+    newStatus,
+  },
+});
   } catch (error) {
     console.log(
       "CAMPAIGN UPDATE ERROR:",
@@ -673,6 +778,22 @@ const performCampaignDelete = async (
       "Campaign Deleted",
       `"${campaign.title}" was deleted successfully.`
     );
+      await writeAuditLog({
+  action: "CAMPAIGN_DELETED",
+
+  description:
+    `Administrator deleted campaign "${campaign.title}".`,
+
+  actorRole: "Admin",
+  targetType: "campaign",
+  targetId: campaign.id,
+
+  metadata: {
+    campaignTitle: campaign.title || "",
+    previousStatus:
+      campaign.status || "Active",
+  },
+});
   } catch (error) {
     console.log(
       "CAMPAIGN DELETE ERROR:",
@@ -817,6 +938,7 @@ const updateCharityVerification = async (
         updatedBy: auth.currentUser?.uid || "",
       }
     );
+    
 
     showMessage(
       "Charity Updated",
@@ -824,6 +946,26 @@ const updateCharityVerification = async (
         ? `"${charity.name}" is now verified.`
         : `"${charity.name}" is now unverified.`
     );
+    await writeAuditLog({
+  action: verified
+    ? "CHARITY_VERIFIED"
+    : "CHARITY_UNVERIFIED",
+
+  description: verified
+    ? `Administrator verified charity "${charity.name}".`
+    : `Administrator marked charity "${charity.name}" as unverified.`,
+
+  actorRole: "Admin",
+  targetType: "charity",
+  targetId: charity.id,
+
+  metadata: {
+    charityName: charity.name || "",
+    previousVerified:
+      charity.verified === true,
+    newVerified: verified,
+  },
+});
   } catch (error) {
     console.log(
       "CHARITY UPDATE ERROR:",
@@ -862,6 +1004,23 @@ const performCharityDelete = async (
       "Charity Deleted",
       `"${charity.name}" was deleted successfully.`
     );
+
+    await writeAuditLog({
+  action: "CHARITY_DELETED",
+
+  description:
+    `Administrator deleted charity "${charity.name}".`,
+
+  actorRole: "Admin",
+  targetType: "charity",
+  targetId: charity.id,
+
+  metadata: {
+    charityName: charity.name || "",
+    verified:
+      charity.verified === true,
+  },
+});
   } catch (error) {
     console.log(
       "CHARITY DELETE ERROR:",
@@ -921,50 +1080,59 @@ const deleteCharity = (charity) => {
   );
 };
 
-  const handleLogout = async () => {
-    const logout = async () => {
-      try {
-        await signOut(auth);
-        navigation.replace("Login");
-      } catch (error) {
-        showMessage(
-          "Logout Error",
-          error.message ||
-            "You could not be logged out."
-        );
-      }
-    };
-
-    if (
-      Platform.OS === "web" &&
-      typeof window !== "undefined"
-    ) {
-      const confirmed = window.confirm(
-        "Are you sure you want to log out?"
+ const handleLogout = async () => {
+  const logout = async () => {
+    try {
+      await endSession({
+        status: "LoggedOut",
+        reason:
+          "Administrator logged out manually from Admin Dashboard.",
+      });
+    } catch (error) {
+      console.log(
+        "ADMIN LOGOUT ERROR:",
+        error.code,
+        error.message
       );
 
-      if (confirmed) {
-        logout();
-      }
+      showMessage(
+        "Logout Error",
+        error.message ||
+          "You could not be logged out."
+      );
+    }
+  };
 
-      return;
+  if (
+    Platform.OS === "web" &&
+    typeof window !== "undefined"
+  ) {
+    const confirmed = window.confirm(
+      "Are you sure you want to log out?"
+    );
+
+    if (confirmed) {
+      await logout();
     }
 
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to log out?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Logout",
-          onPress: logout,
-        },
-      ]
-    );
-  };
+    return;
+  }
+
+  Alert.alert(
+    "Logout",
+    "Are you sure you want to log out?",
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        onPress: logout,
+      },
+    ]
+  );
+};
 
   const getStatusStyles = (status) => {
     if (status === "Approved") {
@@ -1110,6 +1278,18 @@ const deleteCharity = (charity) => {
     🤝 Create New Charity
   </Text>
 </TouchableOpacity>
+
+<TouchableOpacity
+  style={styles.auditLogButton}
+  onPress={() =>
+    navigation.navigate("AuditLog")
+  }
+>
+  <Text style={styles.auditLogButtonText}>
+    📋 View Audit Logs
+  </Text>
+</TouchableOpacity>
+
 <Text style={styles.sectionTitle}>
   Manage Campaigns
 </Text>
@@ -2272,5 +2452,19 @@ unverifyCharityButton: {
   alignItems: "center",
   justifyContent: "center",
   marginTop: 4,
+},
+auditLogButton: {
+  backgroundColor: "#7C3AED",
+  borderRadius: 15,
+  paddingVertical: 15,
+  alignItems: "center",
+  marginTop: -13,
+  marginBottom: 25,
+},
+
+auditLogButtonText: {
+  color: "#FFFFFF",
+  fontSize: 15,
+  fontWeight: "800",
 },
 });

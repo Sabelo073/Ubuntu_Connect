@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
 
   activeCategory: {
-    backgroundColor: "#2563EB",
+    backgroundColor: "#7C3AED",
     borderColor: "#2563EB",
   },
 
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
 
   activeUrgency: {
-    backgroundColor: "#22C55E",
+    backgroundColor: "#7C3AED",
     borderColor: "#22C55E",
   },
 

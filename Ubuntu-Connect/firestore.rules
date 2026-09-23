@@ -155,6 +155,45 @@ match /charities/{charityId} {
 
   allow delete: if isAdmin();
 }
+match /sessions/{sessionId} {
+  allow create: if isSignedIn()
+    && request.resource.data.userId
+      == request.auth.uid;
+
+  allow read: if isSignedIn()
+    && (
+      resource.data.userId
+        == request.auth.uid
+      || isAdmin()
+    );
+
+  allow update: if isSignedIn()
+    && resource.data.userId
+      == request.auth.uid
+    && request.resource.data.userId
+      == resource.data.userId;
+
+  allow delete: if isAdmin();
+}
+match /auditLogs/{logId} {
+  allow create: if isSignedIn()
+    && request.resource.data.actorId
+      == request.auth.uid;
+
+  allow read: if isAdmin();
+
+  allow update, delete: if false;
+}
+
+match /auditLogs/{logId} {
+  allow create: if isSignedIn()
+    && request.resource.data.actorId
+      == request.auth.uid;
+
+  allow read: if isAdmin();
+
+  allow update, delete: if false;
+}
 
     match /chats/{chatId} {
       allow create: if isSignedIn()

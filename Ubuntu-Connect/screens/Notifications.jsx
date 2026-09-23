@@ -22,6 +22,7 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
+import { Ionicons } from "@expo/vector-icons";
 
 import { auth, db } from "../firebaseConfig";
 
@@ -204,27 +205,27 @@ const Notifications = ({ navigation }) => {
     }
   };
 
-  const getIcon = (type) => {
-    switch (type) {
-      case "donation":
-        return "🎁";
+const getIcon = (type) => {
+  switch (type) {
+    case "donation":
+      return "gift";
 
-      case "request":
-        return "🙏";
+    case "request":
+      return "help-circle";
 
-      case "campaign":
-        return "📢";
+    case "campaign":
+      return "megaphone";
 
-      case "message":
-        return "💬";
+    case "message":
+      return "chatbubble";
 
-      case "account":
-        return "👤";
+    case "account":
+      return "person";
 
-      default:
-        return "🔔";
-    }
-  };
+    default:
+      return "notifications";
+  }
+};
 
   const getIconBackground = (type) => {
     switch (type) {
@@ -366,9 +367,13 @@ const Notifications = ({ navigation }) => {
             <View
               style={styles.emptyIconContainer}
             >
-              <Text style={styles.emptyIcon}>
-                🔔
-              </Text>
+            
+  <Ionicons
+    name="notifications"
+    size={55}
+    color="#2563EB"
+  />
+
             </View>
 
             <Text style={styles.emptyTitle}>
@@ -395,18 +400,31 @@ const Notifications = ({ navigation }) => {
                 handleNotificationPress(item)
               }
             >
-              <View
-                style={[
-                  styles.iconContainer,
-                  {
-                    backgroundColor:
-                      getIconBackground(item.type),
-                  },
-                ]}
-              >
-                <Text style={styles.icon}>
-                  {getIcon(item.type)}
-                </Text>
+            <View
+  style={[
+    styles.iconContainer,
+    {
+      backgroundColor:
+        getIconBackground(item.type),
+    },
+  ]}
+>
+<Ionicons
+  name={getIcon(item.type)}
+  size={24}
+  color={
+    item.type === "donation"
+      ? "#16A34A"
+      : item.type === "request"
+      ? "#2563EB"
+      : item.type === "campaign"
+      ? "#D97706"
+      : item.type === "message"
+      ? "#7C3AED"
+      : "#64748B"
+  }
+/>
+
               </View>
 
               <View style={styles.content}>
@@ -573,9 +591,6 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
 
-  icon: {
-    fontSize: 24,
-  },
 
   content: {
     flex: 1,
@@ -658,9 +673,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  emptyIcon: {
-    fontSize: 55,
-  },
+
 
   emptyTitle: {
     fontSize: 22,

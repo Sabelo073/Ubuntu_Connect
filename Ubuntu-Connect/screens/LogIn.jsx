@@ -397,7 +397,7 @@ resettingText: {
 },
 
   loginButton: {
-    backgroundColor: "#2563EB",
+    backgroundColor:"#7C3AED",
     height: 58,
     borderRadius: 15,
     justifyContent: "center",

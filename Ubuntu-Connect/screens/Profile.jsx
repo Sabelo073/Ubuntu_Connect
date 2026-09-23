@@ -5,13 +5,14 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Platform,
   Alert,
 } from "react-native";
 import {
   SafeAreaView,
 } from "react-native-safe-area-context";
 
-import { signOut } from "firebase/auth";
+
 import {
   doc,
   collection,
@@ -21,8 +22,11 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "../firebaseConfig";
+import { useSession } from "../context/SessionContext";
+import { Ionicons } from "@expo/vector-icons";
 
 const Profile = ({ navigation }) => {
+  const { endSession } = useSession();
   const [userData, setUserData] = useState(null);
   const [donationCount, setDonationCount] = useState(0);
   const [requestCount, setRequestCount] = useState(0);
@@ -93,24 +97,68 @@ const Profile = ({ navigation }) => {
 };
   }, []);
 
-  const handleLogout = async () => {
+ const handleLogout = async () => {
+  const logout = async () => {
     try {
       setLoading(true);
 
-      await signOut(auth);
-
-      navigation.replace("Login");
+      await endSession({
+        status: "LoggedOut",
+        reason: "User logged out manually from Profile.",
+      });
     } catch (error) {
-      Alert.alert("Logout Error", error.message);
+      console.log(
+        "PROFILE LOGOUT ERROR:",
+        error.code,
+        error.message
+      );
+
+      Alert.alert(
+        "Logout Error",
+        error.message ||
+          "You could not be logged out."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  if (
+    Platform.OS === "web" &&
+    typeof window !== "undefined"
+  ) {
+    const confirmed = window.confirm(
+      "Are you sure you want to log out?"
+    );
+
+    if (confirmed) {
+      await logout();
+    }
+
+    return;
+  }
+
+  Alert.alert(
+    "Logout",
+    "Are you sure you want to log out?",
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        onPress: logout,
+      },
+    ]
+  );
+};
+  
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.greenHeaderBackground} />
+        <View />
 
         <Text style={styles.heading}>Profile</Text>
 
@@ -137,9 +185,12 @@ const Profile = ({ navigation }) => {
             </Text>
           </View>
           <View style={styles.impactMessage}>
-  <Text style={styles.impactMessageIcon}>
-    🌱
-  </Text>
+ <Ionicons
+  name="leaf"
+  size={20}
+  color="#16A34A"
+  style={{ marginRight: 10 }}
+/>
 
   <Text style={styles.impactMessageText}>
     Every contribution helps strengthen the community.
@@ -151,13 +202,22 @@ const Profile = ({ navigation }) => {
 
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statIcon}>🎁</Text>
+           <Ionicons
+  name="gift"
+  size={30}
+  color="#7C3AED"
+/>
             <Text style={styles.statNumber}>{donationCount}</Text>
             <Text style={styles.statLabel}>Donations</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={styles.statIcon}>🙏</Text>
+            <Ionicons
+  name="help-circle"
+  size={30}
+  color="#2563EB"
+/>
+
             <Text style={styles.statNumber}>{requestCount}</Text>
             <Text style={styles.statLabel}>Requests</Text>
           </View>
@@ -202,18 +262,24 @@ const Profile = ({ navigation }) => {
     navigation.navigate("MyActivity")
   }
 >
-  <Text style={styles.actionEmoji}>
-    📋
-  </Text>
+  <Ionicons
+  name="document-text"
+  size={24}
+  color="#7C3AED"
+  style={{ marginRight: 14 }}
+/>
 <TouchableOpacity
   style={styles.actionRow}
   onPress={() =>
     navigation.navigate("EditProfile")
   }
 >
-  <Text style={styles.actionEmoji}>
-    ✏️
-  </Text>
+ <Ionicons
+  name="create"
+  size={24}
+  color="#22C55E"
+  style={{ marginRight: 14 }}
+/>
 
   <Text style={styles.actionText}>
     Edit Profile
@@ -239,7 +305,13 @@ const Profile = ({ navigation }) => {
             style={styles.actionRow}
             onPress={() => navigation.navigate("Donate")}
           >
-            <Text style={styles.actionEmoji}>🎁</Text>
+          <Ionicons
+  name="gift"
+  size={24}
+  color="#7C3AED"
+  style={{ marginRight: 14 }}
+/>
+
             <Text style={styles.actionText}>Donate an Item</Text>
 
             <Text style={styles.actionArrow}>›</Text>
@@ -251,7 +323,12 @@ const Profile = ({ navigation }) => {
             style={styles.actionRow}
             onPress={() => navigation.navigate("RequestHelp")}
           >
-            <Text style={styles.actionEmoji}>🙏</Text>
+            <Ionicons
+  name="help-circle"
+  size={24}
+  color="#2563EB"
+  style={{ marginRight: 14 }}
+/>
             <Text style={styles.actionText}>Request Help</Text>
 
             <Text style={styles.actionArrow}>›</Text>
@@ -263,7 +340,12 @@ const Profile = ({ navigation }) => {
             style={styles.actionRow}
             onPress={() => navigation.navigate("Campaigns")}
           >
-            <Text style={styles.actionEmoji}>📢</Text>
+           <Ionicons
+  name="megaphone"
+  size={24}
+  color="#F59E0B"
+  style={{ marginRight: 14 }}
+/>
             <Text style={styles.actionText}>Campaigns</Text>
 
             <Text style={styles.actionArrow}>›</Text>
@@ -275,9 +357,12 @@ const Profile = ({ navigation }) => {
 
 <View style={styles.dangerCard}>
   <View style={styles.dangerInformation}>
-    <Text style={styles.dangerIcon}>
-      ⚠️
-    </Text>
+    <Ionicons
+  name="warning"
+  size={24}
+  color="#DC2626"
+  style={{ marginRight: 12 }}
+/>
 
     <View style={styles.dangerTextContainer}>
       <Text style={styles.dangerTitle}>
@@ -310,9 +395,26 @@ const Profile = ({ navigation }) => {
           onPress={handleLogout}
           disabled={loading}
         >
-          <Text style={styles.logoutText}>
-            {loading ? "Logging out..." : "Logout"}
-          </Text>
+          <View
+  style={{
+    flexDirection: "row",
+    alignItems: "center",
+  }}
+>
+  <Ionicons
+    name="log-out"
+    size={18}
+    color="#FFFFFF"
+  />
+  <Text
+    style={[
+      styles.logoutText,
+      { marginLeft: 8 }
+    ]}
+  >
+    {loading ? "Logging out..." : "Logout"}
+  </Text>
+</View>
         </TouchableOpacity>
 
         <View style={{ height: 100 }} />
@@ -327,18 +429,17 @@ export default Profile;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor:"#fffefeba",
     paddingHorizontal: 20,
   },
 
 heading: {
   fontSize: 30,
   fontWeight: "800",
-  color: "#14532D",
+  color: "#212023e5",
   marginTop: 20,
   marginBottom: 20,
 },
-
 
 profileCard: {
   backgroundColor: "#FFFFFF",
@@ -346,9 +447,11 @@ profileCard: {
   padding: 24,
   alignItems: "center",
   marginBottom: 25,
+
   borderWidth: 1,
-  borderColor: "#BBF7D0",
-  shadowColor: "#16A34A",
+  borderColor: "#DDD6FE",
+
+  shadowColor: "#7C3AED",
   shadowOpacity: 0.08,
   shadowRadius: 10,
   elevation: 3,
@@ -358,15 +461,20 @@ avatar: {
   width: 95,
   height: 95,
   borderRadius: 50,
-  backgroundColor: "#16A34A",
+
+  backgroundColor: "#0b9c21",
+
   justifyContent: "center",
   alignItems: "center",
+
   marginBottom: 15,
+
   borderWidth: 5,
-  borderColor: "#DCFCE7",
-  shadowColor: "#16A34A",
-  shadowOpacity: 0.18,
-  shadowRadius: 10,
+  borderColor: "#EDE9FE",
+
+  shadowColor: "#7C3AED",
+  shadowOpacity: 0.2,
+  shadowRadius: 12,
   elevation: 4,
 },
 
@@ -389,13 +497,17 @@ avatar: {
     marginBottom: 12,
   },
 
-  roleBadge: {
-    backgroundColor: "#DCFCE7",
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
+roleBadge: {
+  backgroundColor: "#EDE9FE",
+  paddingHorizontal: 16,
+  paddingVertical: 7,
+  borderRadius: 20,
+},
 
+roleText: {
+  color: "#7C3AED",
+  fontWeight: "700",
+},
   roleText: {
     color: "#16A34A",
     fontWeight: "700",
@@ -404,10 +516,12 @@ avatar: {
 sectionTitle: {
   fontSize: 20,
   fontWeight: "700",
-  color: "#166534",
+  color: "#2563EB",
   marginBottom: 15,
+
   borderLeftWidth: 4,
-  borderLeftColor: "#22C55E",
+  borderLeftColor: "#7C3AED",
+
   paddingLeft: 10,
 },
 
@@ -420,17 +534,19 @@ sectionTitle: {
 
 statCard: {
   width: "48%",
-  backgroundColor: "#F0FDF4",
+  backgroundColor: "#FAF5FF",
+
   borderRadius: 20,
   paddingVertical: 24,
   alignItems: "center",
+
   borderWidth: 1,
-  borderColor: "#BBF7D0",
-  shadowColor: "#16A34A",
+  borderColor: "#DDD6FE",
+
+  shadowColor: "#7C3AED",
   shadowOpacity: 0.06,
   shadowRadius: 6,
-  elevation: 3,
-},
+  elevation: 3,},
 
   statIcon: {
     fontSize: 30,
@@ -494,10 +610,6 @@ actionRow: {
   paddingVertical: 17,
   paddingHorizontal: 4,
 },
-  actionEmoji: {
-    fontSize: 24,
-    marginRight: 14,
-  },
 
 actionText: {
   flex: 1,
@@ -521,16 +633,6 @@ actionText: {
     fontSize: 16,
     fontWeight: "700",
   },
-greenHeaderBackground: {
-  position: "absolute",
-  top: 0,
-  left: -20,
-  right: -20,
-  height: 150,
-  backgroundColor: "#DCFCE7",
-  borderBottomLeftRadius: 35,
-  borderBottomRightRadius: 35,
-},
 
 impactMessage: {
   flexDirection: "row",
@@ -545,10 +647,7 @@ impactMessage: {
   borderColor: "#BBF7D0",
 },
 
-impactMessageIcon: {
-  fontSize: 20,
-  marginRight: 10,
-},
+
 
 impactMessageText: {
   flex: 1,

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Text } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-
+import { Ionicons } from "@expo/vector-icons";
 import {
   collection,
   query,
@@ -155,31 +154,31 @@ export default function MainTabs() {
           fontWeight: "600",
         },
 
-        tabBarIcon: ({ focused }) => {
-          let emoji = "❔";
+       tabBarIcon: ({ focused, color, size }) => {
+  let iconName;
 
-          if (route.name === "Home") {
-            emoji = "🏠";
-          } else if (route.name === "Donate") {
-            emoji = "🎁";
-          } else if (route.name === "Messages") {
-            emoji = "💬";
-          } else if (route.name === "Notifications") {
-            emoji = "🔔";
-          } else if (route.name === "Profile") {
-            emoji = "👤";
-          }
+  if (route.name === "Home") {
+    iconName = focused ? "home" : "home-outline";
+  } else if (route.name === "Donate") {
+    iconName = focused ? "gift" : "gift-outline";
+  } else if (route.name === "Messages") {
+    iconName = focused ? "chatbubble" : "chatbubble-outline";
+  } else if (route.name === "Notifications") {
+    iconName = focused
+      ? "notifications"
+      : "notifications-outline";
+  } else if (route.name === "Profile") {
+    iconName = focused ? "person" : "person-outline";
+  }
 
-          return (
-            <Text
-              style={{
-                fontSize: focused ? 26 : 22,
-              }}
-            >
-              {emoji}
-            </Text>
-          );
-        },
+  return (
+    <Ionicons
+      name={iconName}
+      size={focused ? 26 : 22}
+      color={color}
+    />
+  );
+},
       })}
     >
       <Tab.Screen
