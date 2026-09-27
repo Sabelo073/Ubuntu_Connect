@@ -16,6 +16,8 @@ import {
   Platform,
 } from "react-native";
 
+import { MaterialIcons } from "@expo/vector-icons";
+
 import {
   collection,
   limit,
@@ -24,9 +26,7 @@ import {
   query,
 } from "firebase/firestore";
 
-import {
-  SafeAreaView,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { db } from "../firebaseConfig";
 
@@ -50,6 +50,10 @@ const AuditLog = ({ navigation }) => {
 
   const [loading, setLoading] = useState(true);
 
+  // ==========================================
+  // MESSAGE
+  // ==========================================
+
   const showMessage = (title, message) => {
     if (
       Platform.OS === "web" &&
@@ -60,6 +64,10 @@ const AuditLog = ({ navigation }) => {
       Alert.alert(title, message);
     }
   };
+
+  // ==========================================
+  // LOAD AUDIT LOGS
+  // ==========================================
 
   useEffect(() => {
     const auditQuery = query(
@@ -100,6 +108,10 @@ const AuditLog = ({ navigation }) => {
 
     return () => unsubscribe();
   }, []);
+
+  // ==========================================
+  // CATEGORY
+  // ==========================================
 
   const getCategory = (log) => {
     const targetType =
@@ -148,6 +160,10 @@ const AuditLog = ({ navigation }) => {
     return "Other";
   };
 
+  // ==========================================
+  // FILTER LOGS
+  // ==========================================
+
   const filteredLogs = useMemo(() => {
     const cleanSearch =
       searchText.trim().toLowerCase();
@@ -180,9 +196,19 @@ const AuditLog = ({ navigation }) => {
         .join(" ")
         .toLowerCase();
 
-      return searchableText.includes(cleanSearch);
+      return searchableText.includes(
+        cleanSearch
+      );
     });
-  }, [auditLogs, activeFilter, searchText]);
+  }, [
+    auditLogs,
+    activeFilter,
+    searchText,
+  ]);
+
+  // ==========================================
+  // FORMAT TIMESTAMP
+  // ==========================================
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) {
@@ -207,27 +233,35 @@ const AuditLog = ({ navigation }) => {
     });
   };
 
+  // ==========================================
+  // CATEGORY ICON
+  // ==========================================
+
   const getCategoryIcon = (category) => {
     switch (category) {
       case "Session":
-        return "🔐";
+        return "lock";
 
       case "Donation":
-        return "🎁";
+        return "card-giftcard";
 
       case "Request":
-        return "🙏";
+        return "help-outline";
 
       case "Campaign":
-        return "📢";
+        return "campaign";
 
       case "Charity":
-        return "🤝";
+        return "handshake";
 
       default:
-        return "📋";
+        return "description";
     }
   };
+
+  // ==========================================
+  // CATEGORY COLOR
+  // ==========================================
 
   const getCategoryColor = (category) => {
     switch (category) {
@@ -250,6 +284,10 @@ const AuditLog = ({ navigation }) => {
         return "#64748B";
     }
   };
+
+  // ==========================================
+  // FORMAT METADATA
+  // ==========================================
 
   const formatMetadata = (metadata) => {
     if (
@@ -277,8 +315,13 @@ const AuditLog = ({ navigation }) => {
       .join("\n");
   };
 
+  // ==========================================
+  // AUDIT LOG CARD
+  // ==========================================
+
   const renderAuditLog = ({ item }) => {
     const category = getCategory(item);
+
     const categoryColor =
       getCategoryColor(category);
 
@@ -287,20 +330,26 @@ const AuditLog = ({ navigation }) => {
 
     return (
       <TouchableOpacity
-        activeOpacity={0.85}
+        activeOpacity={0.9}
         style={[
           styles.logCard,
           {
-            borderLeftColor: categoryColor,
+            borderLeftColor:
+              categoryColor,
           },
         ]}
         onPress={() =>
           setExpandedLogId(
-            isExpanded ? null : item.id
+            isExpanded
+              ? null
+              : item.id
           )
         }
       >
+
+        {/* LOG HEADER */}
         <View style={styles.logHeader}>
+
           <View
             style={[
               styles.iconContainer,
@@ -310,12 +359,18 @@ const AuditLog = ({ navigation }) => {
               },
             ]}
           >
-            <Text style={styles.icon}>
-              {getCategoryIcon(category)}
-            </Text>
+            <MaterialIcons
+              name={getCategoryIcon(category)}
+              size={22}
+              color={categoryColor}
+            />
           </View>
 
-          <View style={styles.logTitleContainer}>
+          <View
+            style={
+              styles.logTitleContainer
+            }
+          >
             <Text
               style={styles.actionText}
               numberOfLines={2}
@@ -324,9 +379,25 @@ const AuditLog = ({ navigation }) => {
                 "UNKNOWN_ACTION"}
             </Text>
 
-            <Text style={styles.timestamp}>
-              {formatTimestamp(item.timestamp)}
-            </Text>
+            <View
+              style={
+                styles.timestampRow
+              }
+            >
+              <MaterialIcons
+                name="schedule"
+                size={12}
+                color="#94A3B8"
+              />
+
+              <Text
+                style={styles.timestamp}
+              >
+                {formatTimestamp(
+                  item.timestamp
+                )}
+              </Text>
+            </View>
           </View>
 
           <View
@@ -342,126 +413,300 @@ const AuditLog = ({ navigation }) => {
               style={[
                 styles.categoryText,
                 {
-                  color: categoryColor,
+                  color:
+                    categoryColor,
                 },
               ]}
             >
               {category}
             </Text>
           </View>
+
         </View>
 
+        {/* DESCRIPTION */}
         <Text style={styles.description}>
           {item.description ||
             "No description provided."}
         </Text>
 
-        <View style={styles.actorContainer}>
-          <Text style={styles.actorLabel}>
-            Performed by
-          </Text>
-
-          <Text
-            style={styles.actorValue}
-            numberOfLines={1}
+        {/* ACTOR */}
+        <View
+          style={styles.actorContainer}
+        >
+          <View
+            style={styles.actorIcon}
           >
-            {item.actorEmail ||
-              item.actorId ||
-              "Unknown user"}
-          </Text>
+            <MaterialIcons
+              name="person"
+              size={16}
+              color="#64748B"
+            />
+          </View>
+
+          <View
+            style={styles.actorTextContainer}
+          >
+            <Text
+              style={styles.actorLabel}
+            >
+              PERFORMED BY
+            </Text>
+
+            <Text
+              style={styles.actorValue}
+              numberOfLines={1}
+            >
+              {item.actorEmail ||
+                item.actorId ||
+                "Unknown user"}
+            </Text>
+          </View>
         </View>
 
+        {/* SUMMARY */}
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryText}>
-            Role: {item.actorRole || "User"}
-          </Text>
 
-          <Text style={styles.summaryText}>
-            Platform:{" "}
-            {item.platform || "Unknown"}
-          </Text>
+          <View
+            style={styles.summaryItem}
+          >
+            <MaterialIcons
+              name="badge"
+              size={13}
+              color="#94A3B8"
+            />
 
-          <Text style={styles.expandText}>
-            {isExpanded
-              ? "Hide details ▲"
-              : "View details ▼"}
-          </Text>
+            <Text
+              style={styles.summaryText}
+            >
+              {item.actorRole ||
+                "User"}
+            </Text>
+          </View>
+
+          <View
+            style={styles.summaryItem}
+          >
+            <MaterialIcons
+              name={
+                item.platform ===
+                "web"
+                  ? "language"
+                  : "phone-android"
+              }
+              size={13}
+              color="#94A3B8"
+            />
+
+            <Text
+              style={styles.summaryText}
+            >
+              {item.platform ||
+                "Unknown"}
+            </Text>
+          </View>
+
+          <View
+            style={
+              styles.expandContainer
+            }
+          >
+            <Text
+              style={styles.expandText}
+            >
+              {isExpanded
+                ? "Hide details"
+                : "View details"}
+            </Text>
+
+            <MaterialIcons
+              name={
+                isExpanded
+                  ? "keyboard-arrow-up"
+                  : "keyboard-arrow-down"
+              }
+              size={17}
+              color="#2563EB"
+            />
+          </View>
+
         </View>
 
+        {/* EXPANDED DETAILS */}
         {isExpanded && (
-          <View style={styles.expandedContainer}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>
-                Log ID
+          <View
+            style={
+              styles.expandedContainer
+            }
+          >
+
+            <View
+              style={styles.detailRow}
+            >
+              <Text
+                style={
+                  styles.detailLabel
+                }
+              >
+                LOG ID
               </Text>
 
-              <Text style={styles.detailValue}>
+              <Text
+                style={
+                  styles.detailValue
+                }
+              >
                 {item.id}
               </Text>
             </View>
 
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>
-                Actor ID
+            <View
+              style={styles.detailRow}
+            >
+              <Text
+                style={
+                  styles.detailLabel
+                }
+              >
+                ACTOR ID
               </Text>
 
-              <Text style={styles.detailValue}>
+              <Text
+                style={
+                  styles.detailValue
+                }
+              >
                 {item.actorId ||
                   "Not available"}
               </Text>
             </View>
 
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>
-                Target type
+            <View
+              style={styles.detailRow}
+            >
+              <Text
+                style={
+                  styles.detailLabel
+                }
+              >
+                TARGET TYPE
               </Text>
 
-              <Text style={styles.detailValue}>
+              <Text
+                style={
+                  styles.detailValue
+                }
+              >
                 {item.targetType ||
                   "Not specified"}
               </Text>
             </View>
 
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>
-                Target ID
+            <View
+              style={styles.detailRow}
+            >
+              <Text
+                style={
+                  styles.detailLabel
+                }
+              >
+                TARGET ID
               </Text>
 
-              <Text style={styles.detailValue}>
+              <Text
+                style={
+                  styles.detailValue
+                }
+              >
                 {item.targetId ||
                   "Not specified"}
               </Text>
             </View>
 
-            <Text style={styles.metadataTitle}>
-              Metadata
+            <View
+              style={
+                styles.metadataHeader
+              }
+            >
+              <MaterialIcons
+                name="data-object"
+                size={16}
+                color="#2563EB"
+              />
+
+              <Text
+                style={
+                  styles.metadataTitle
+                }
+              >
+                Metadata
+              </Text>
+            </View>
+
+            <Text
+              style={
+                styles.metadataText
+              }
+            >
+              {formatMetadata(
+                item.metadata
+              )}
             </Text>
 
-            <Text style={styles.metadataText}>
-              {formatMetadata(item.metadata)}
-            </Text>
           </View>
         )}
+
       </TouchableOpacity>
     );
   };
 
+  // ==========================================
+  // SCREEN
+  // ==========================================
+
   return (
     <SafeAreaView
       style={styles.container}
-      edges={["top", "left", "right"]}
+      edges={[
+        "top",
+        "left",
+        "right",
+      ]}
     >
+
+      {/* HEADER */}
       <View style={styles.header}>
+
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() =>
+            navigation.goBack()
+          }
         >
-          <Text style={styles.backButtonText}>
-            ‹
-          </Text>
+          <MaterialIcons
+            name="arrow-back"
+            size={22}
+            color="#1E293B"
+          />
         </TouchableOpacity>
 
-        <View style={styles.headerTextContainer}>
+        <View
+          style={
+            styles.headerIconContainer
+          }
+        >
+          <MaterialIcons
+            name="fact-check"
+            size={24}
+            color="#2563EB"
+          />
+        </View>
+
+        <View
+          style={
+            styles.headerTextContainer
+          }
+        >
           <Text style={styles.heading}>
             Audit Log
           </Text>
@@ -470,28 +715,68 @@ const AuditLog = ({ navigation }) => {
             Monitor important system activity.
           </Text>
         </View>
+
       </View>
 
+      {/* SUMMARY */}
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryNumber}>
-          {auditLogs.length}
-        </Text>
+
+        <View
+          style={
+            styles.summaryIconContainer
+          }
+        >
+          <MaterialIcons
+            name="analytics"
+            size={25}
+            color="#2563EB"
+          />
+        </View>
 
         <View>
-          <Text style={styles.summaryTitle}>
+          <Text
+            style={
+              styles.summaryNumber
+            }
+          >
+            {auditLogs.length}
+          </Text>
+        </View>
+
+        <View
+          style={
+            styles.summaryInfo
+          }
+        >
+          <Text
+            style={
+              styles.summaryTitle
+            }
+          >
             Recorded events
           </Text>
 
-          <Text style={styles.summaryDescription}>
+          <Text
+            style={
+              styles.summaryDescription
+            }
+          >
             Showing up to 200 recent events
           </Text>
         </View>
+
       </View>
 
-      <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>
-          🔍
-        </Text>
+      {/* SEARCH */}
+      <View
+        style={styles.searchContainer}
+      >
+
+        <MaterialIcons
+          name="search"
+          size={21}
+          color="#94A3B8"
+        />
 
         <TextInput
           placeholder="Search audit logs..."
@@ -505,92 +790,195 @@ const AuditLog = ({ navigation }) => {
 
         {searchText.length > 0 && (
           <TouchableOpacity
-            onPress={() => setSearchText("")}
+            onPress={() =>
+              setSearchText("")
+            }
+            style={styles.clearButton}
           >
-            <Text style={styles.clearText}>
-              ✕
-            </Text>
+            <MaterialIcons
+              name="close"
+              size={18}
+              color="#64748B"
+            />
           </TouchableOpacity>
+        )}
+
+      </View>
+
+      {/* FILTERS */}
+      <View
+        style={styles.filterContainer}
+      >
+        {FILTERS.map((filter) => {
+
+          const isActive =
+            activeFilter === filter;
+
+          return (
+            <TouchableOpacity
+              key={filter}
+              style={[
+                styles.filterButton,
+                isActive &&
+                  styles.activeFilterButton,
+              ]}
+              onPress={() =>
+                setActiveFilter(
+                  filter
+                )
+              }
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  isActive &&
+                    styles.activeFilterText,
+                ]}
+              >
+                {filter}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* RESULTS */}
+      <View
+        style={styles.resultsHeader}
+      >
+        <Text
+          style={styles.resultsText}
+        >
+          {filteredLogs.length}{" "}
+          {filteredLogs.length === 1
+            ? "event"
+            : "events"}{" "}
+          found
+        </Text>
+
+        {activeFilter !== "All" && (
+          <View
+            style={
+              styles.activeFilterLabel
+            }
+          >
+            <MaterialIcons
+              name="filter-list"
+              size={13}
+              color="#2563EB"
+            />
+
+            <Text
+              style={
+                styles.activeFilterLabelText
+              }
+            >
+              {activeFilter}
+            </Text>
+          </View>
         )}
       </View>
 
-      <View style={styles.filterContainer}>
-        {FILTERS.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterButton,
-              activeFilter === filter &&
-                styles.activeFilterButton,
-            ]}
-            onPress={() =>
-              setActiveFilter(filter)
+      {/* LOADING / LIST */}
+      {loading ? (
+
+        <View
+          style={
+            styles.centerContainer
+          }
+        >
+          <View
+            style={
+              styles.loadingIconContainer
             }
           >
-            <Text
-              style={[
-                styles.filterText,
-                activeFilter === filter &&
-                  styles.activeFilterText,
-              ]}
-            >
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+            <MaterialIcons
+              name="fact-check"
+              size={32}
+              color="#2563EB"
+            />
+          </View>
 
-      <Text style={styles.resultsText}>
-        {filteredLogs.length}{" "}
-        {filteredLogs.length === 1
-          ? "event"
-          : "events"}
-      </Text>
-
-      {loading ? (
-        <View style={styles.centerContainer}>
           <ActivityIndicator
-            size="large"
+            size="small"
             color="#2563EB"
           />
 
-          <Text style={styles.loadingText}>
+          <Text
+            style={styles.loadingText}
+          >
             Loading audit logs...
           </Text>
         </View>
+
       ) : (
+
         <FlatList
           data={filteredLogs}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) =>
+            item.id
+          }
           renderItem={renderAuditLog}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={
+            false
+          }
           contentContainerStyle={
             filteredLogs.length === 0
               ? styles.emptyListContainer
               : styles.listContainer
           }
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>
-                📋
-              </Text>
 
-              <Text style={styles.emptyTitle}>
+            <View
+              style={
+                styles.emptyContainer
+              }
+            >
+
+              <View
+                style={
+                  styles.emptyIconContainer
+                }
+              >
+                <MaterialIcons
+                  name="find-in-page"
+                  size={42}
+                  color="#94A3B8"
+                />
+              </View>
+
+              <Text
+                style={
+                  styles.emptyTitle
+                }
+              >
                 No Audit Events Found
               </Text>
 
-              <Text style={styles.emptyText}>
-                No events match the selected filter
-                or search.
+              <Text
+                style={styles.emptyText}
+              >
+                No events match the selected
+                filter or search.
               </Text>
 
               <TouchableOpacity
-                style={styles.clearFiltersButton}
+                style={
+                  styles.clearFiltersButton
+                }
                 onPress={() => {
                   setSearchText("");
-                  setActiveFilter("All");
+                  setActiveFilter(
+                    "All"
+                  );
                 }}
               >
+                <MaterialIcons
+                  name="filter-alt-off"
+                  size={18}
+                  color="#FFFFFF"
+                />
+
                 <Text
                   style={
                     styles.clearFiltersText
@@ -599,22 +987,35 @@ const AuditLog = ({ navigation }) => {
                   Clear Filters
                 </Text>
               </TouchableOpacity>
+
             </View>
           }
         />
+
       )}
+
     </SafeAreaView>
   );
 };
 
 export default AuditLog;
 
+
+// ============================================
+// STYLES
+// ============================================
+
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
     paddingHorizontal: 20,
   },
+
+  // ==========================================
+  // HEADER
+  // ==========================================
 
   header: {
     flexDirection: "row",
@@ -624,21 +1025,25 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 13,
+    marginRight: 10,
   },
 
-  backButtonText: {
-    color: "#1E293B",
-    fontSize: 32,
-    lineHeight: 34,
+  headerIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
   },
 
   headerTextContainer: {
@@ -647,15 +1052,19 @@ const styles = StyleSheet.create({
 
   heading: {
     color: "#1E293B",
-    fontSize: 28,
+    fontSize: 27,
     fontWeight: "800",
   },
 
   subtitle: {
     color: "#64748B",
-    fontSize: 13,
+    fontSize: 12,
     marginTop: 3,
   },
+
+  // ==========================================
+  // SUMMARY
+  // ==========================================
 
   summaryCard: {
     flexDirection: "row",
@@ -664,15 +1073,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#BFDBFE",
     borderRadius: 17,
-    padding: 15,
+    padding: 14,
     marginBottom: 14,
+  },
+
+  summaryIconContainer: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
   },
 
   summaryNumber: {
     color: "#2563EB",
-    fontSize: 27,
+    fontSize: 26,
     fontWeight: "900",
-    marginRight: 14,
+  },
+
+  summaryInfo: {
+    marginLeft: 9,
   },
 
   summaryTitle: {
@@ -683,9 +1105,13 @@ const styles = StyleSheet.create({
 
   summaryDescription: {
     color: "#64748B",
-    fontSize: 11,
+    fontSize: 10,
     marginTop: 3,
   },
+
+  // ==========================================
+  // SEARCH
+  // ==========================================
 
   searchContainer: {
     height: 52,
@@ -698,23 +1124,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
 
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 9,
-  },
-
   searchInput: {
     flex: 1,
     height: "100%",
     color: "#1E293B",
     fontSize: 14,
+    marginLeft: 9,
   },
 
-  clearText: {
-    color: "#64748B",
-    fontWeight: "700",
+  clearButton: {
     padding: 5,
   },
+
+  // ==========================================
+  // FILTERS
+  // ==========================================
 
   filterContainer: {
     flexDirection: "row",
@@ -727,7 +1151,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 18,
-    paddingHorizontal: 11,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     marginRight: 6,
     marginBottom: 7,
@@ -748,13 +1172,43 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
+  // ==========================================
+  // RESULTS HEADER
+  // ==========================================
+
+  resultsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+    marginBottom: 12,
+  },
+
   resultsText: {
     color: "#64748B",
     fontSize: 12,
     fontWeight: "600",
-    marginTop: 4,
-    marginBottom: 12,
   },
+
+  activeFilterLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+
+  activeFilterLabelText: {
+    color: "#2563EB",
+    fontSize: 10,
+    fontWeight: "800",
+    marginLeft: 3,
+  },
+
+  // ==========================================
+  // LOG CARD
+  // ==========================================
 
   listContainer: {
     paddingBottom: 80,
@@ -786,10 +1240,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
 
-  icon: {
-    fontSize: 19,
-  },
-
   logTitleContainer: {
     flex: 1,
   },
@@ -800,10 +1250,16 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  timestampRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
   timestamp: {
     color: "#94A3B8",
     fontSize: 10,
-    marginTop: 4,
+    marginLeft: 4,
   },
 
   categoryBadge: {
@@ -818,6 +1274,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  // ==========================================
+  // DESCRIPTION
+  // ==========================================
+
   description: {
     color: "#475569",
     fontSize: 13,
@@ -825,17 +1285,38 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 
+  // ==========================================
+  // ACTOR
+  // ==========================================
+
   actorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#F8FAFC",
     borderRadius: 10,
     padding: 10,
     marginTop: 11,
   },
 
+  actorIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    backgroundColor: "#E2E8F0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 9,
+  },
+
+  actorTextContainer: {
+    flex: 1,
+  },
+
   actorLabel: {
     color: "#94A3B8",
     fontSize: 9,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 
   actorValue: {
@@ -845,24 +1326,43 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
+  // ==========================================
+  // SUMMARY ROW
+  // ==========================================
+
   summaryRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
   },
 
+  summaryItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
   summaryText: {
     color: "#64748B",
     fontSize: 10,
-    marginRight: 12,
+    marginLeft: 4,
+  },
+
+  expandContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: "auto",
   },
 
   expandText: {
     color: "#2563EB",
     fontSize: 10,
     fontWeight: "700",
-    marginLeft: "auto",
   },
+
+  // ==========================================
+  // EXPANDED DETAILS
+  // ==========================================
 
   expandedContainer: {
     borderTopWidth: 1,
@@ -877,8 +1377,9 @@ const styles = StyleSheet.create({
 
   detailLabel: {
     color: "#94A3B8",
-    fontSize: 10,
-    fontWeight: "700",
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 
   detailValue: {
@@ -887,11 +1388,17 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
+  metadataHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+  },
+
   metadataTitle: {
     color: "#1E293B",
     fontSize: 12,
     fontWeight: "800",
-    marginTop: 5,
+    marginLeft: 5,
   },
 
   metadataText: {
@@ -904,17 +1411,35 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
+  // ==========================================
+  // LOADING
+  // ==========================================
+
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
 
+  loadingIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 22,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+
   loadingText: {
     color: "#64748B",
     fontWeight: "600",
-    marginTop: 12,
+    marginTop: 10,
   },
+
+  // ==========================================
+  // EMPTY STATE
+  // ==========================================
 
   emptyListContainer: {
     flexGrow: 1,
@@ -928,25 +1453,33 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
 
-  emptyIcon: {
-    fontSize: 52,
+  emptyIconContainer: {
+    width: 82,
+    height: 82,
+    borderRadius: 26,
+    backgroundColor: "#E2E8F0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 14,
   },
 
   emptyTitle: {
     color: "#1E293B",
     fontSize: 19,
     fontWeight: "800",
-    marginTop: 14,
   },
 
   emptyText: {
     color: "#64748B",
     fontSize: 13,
     textAlign: "center",
+    lineHeight: 19,
     marginTop: 7,
   },
 
   clearFiltersButton: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#2563EB",
     borderRadius: 12,
     paddingHorizontal: 17,
@@ -957,5 +1490,6 @@ const styles = StyleSheet.create({
   clearFiltersText: {
     color: "#FFFFFF",
     fontWeight: "800",
+    marginLeft: 7,
   },
 });

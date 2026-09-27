@@ -21,6 +21,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
 import { auth, db } from "../firebaseConfig";
 
 function EditProfile({ navigation }) {
@@ -189,10 +191,6 @@ function EditProfile({ navigation }) {
           location: location.trim(),
           bio: bio.trim(),
 
-          /*
-            Role is included unchanged because the
-            current Firestore rule protects this field.
-          */
           role,
 
           updatedAt: serverTimestamp(),
@@ -229,8 +227,16 @@ function EditProfile({ navigation }) {
       <SafeAreaView
         style={styles.loadingContainer}
       >
+        <View style={styles.loadingIcon}>
+          <MaterialIcons
+            name="person"
+            size={32}
+            color="#16A34A"
+          />
+        </View>
+
         <ActivityIndicator
-          size="large"
+          size="small"
           color="#16A34A"
         />
 
@@ -253,15 +259,19 @@ function EditProfile({ navigation }) {
           styles.scrollContent
         }
       >
+        {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             disabled={saving}
+            activeOpacity={0.8}
           >
-            <Text style={styles.backButtonText}>
-              ‹
-            </Text>
+            <MaterialIcons
+              name="arrow-back"
+              size={23}
+              color="#166534"
+            />
           </TouchableOpacity>
 
           <View style={styles.headerTextContainer}>
@@ -270,21 +280,40 @@ function EditProfile({ navigation }) {
             </Text>
 
             <Text style={styles.subtitle}>
-              Update your Ubuntu Connect details.
+              Keep your Ubuntu Connect details up to date.
             </Text>
+          </View>
+
+          <View style={styles.headerIcon}>
+            <MaterialIcons
+              name="manage-accounts"
+              size={23}
+              color="#16A34A"
+            />
           </View>
         </View>
 
+        {/* PROFILE PREVIEW */}
         <View style={styles.profilePreview}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {fullName.trim()
-                ? fullName
-                    .trim()
-                    .charAt(0)
-                    .toUpperCase()
-                : "U"}
-            </Text>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {fullName.trim()
+                  ? fullName
+                      .trim()
+                      .charAt(0)
+                      .toUpperCase()
+                  : "U"}
+              </Text>
+            </View>
+
+            <View style={styles.avatarCheck}>
+              <MaterialIcons
+                name="check"
+                size={12}
+                color="#FFFFFF"
+              />
+            </View>
           </View>
 
           <View style={styles.previewContent}>
@@ -296,14 +325,28 @@ function EditProfile({ navigation }) {
                 "Ubuntu Connect User"}
             </Text>
 
-            <Text
-              style={styles.previewEmail}
-              numberOfLines={1}
-            >
-              {email || "Email unavailable"}
-            </Text>
+            <View style={styles.previewEmailRow}>
+              <MaterialIcons
+                name="email"
+                size={14}
+                color="#64748B"
+              />
+
+              <Text
+                style={styles.previewEmail}
+                numberOfLines={1}
+              >
+                {email || "Email unavailable"}
+              </Text>
+            </View>
 
             <View style={styles.roleBadge}>
+              <MaterialIcons
+                name="verified-user"
+                size={13}
+                color="#16A34A"
+              />
+
               <Text style={styles.roleText}>
                 {role}
               </Text>
@@ -311,86 +354,182 @@ function EditProfile({ navigation }) {
           </View>
         </View>
 
+        {/* FORM */}
         <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>
-            Personal Information
-          </Text>
+          {/* PERSONAL INFORMATION */}
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIcon}>
+              <MaterialIcons
+                name="person"
+                size={19}
+                color="#16A34A"
+              />
+            </View>
 
+            <View>
+              <Text style={styles.sectionTitle}>
+                Personal Information
+              </Text>
+
+              <Text style={styles.sectionSubtitle}>
+                Update the details visible on your profile.
+              </Text>
+            </View>
+          </View>
+
+          {/* FULL NAME */}
           <Text style={styles.label}>
             Full name
           </Text>
 
-          <TextInput
-            placeholder="Enter your full name"
-            placeholderTextColor="#94A3B8"
-            value={fullName}
-            onChangeText={setFullName}
-            style={styles.input}
-            maxLength={100}
-            editable={!saving}
-          />
+          <View style={styles.inputWrapper}>
+            <MaterialIcons
+              name="person-outline"
+              size={20}
+              color="#64748B"
+              style={styles.inputIcon}
+            />
 
+            <TextInput
+              placeholder="Enter your full name"
+              placeholderTextColor="#94A3B8"
+              value={fullName}
+              onChangeText={setFullName}
+              style={styles.input}
+              maxLength={100}
+              editable={!saving}
+            />
+          </View>
+
+          {/* PHONE */}
           <Text style={styles.label}>
             Phone number
           </Text>
 
-          <TextInput
-            placeholder="Example: 071 234 5678"
-            placeholderTextColor="#94A3B8"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            style={styles.input}
-            maxLength={20}
-            editable={!saving}
-          />
+          <View style={styles.inputWrapper}>
+            <MaterialIcons
+              name="phone"
+              size={20}
+              color="#64748B"
+              style={styles.inputIcon}
+            />
 
+            <TextInput
+              placeholder="Example: 071 234 5678"
+              placeholderTextColor="#94A3B8"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              style={styles.input}
+              maxLength={20}
+              editable={!saving}
+            />
+          </View>
+
+          {/* LOCATION */}
           <Text style={styles.label}>
             Location
           </Text>
 
-          <TextInput
-            placeholder="Example: Johannesburg"
-            placeholderTextColor="#94A3B8"
-            value={location}
-            onChangeText={setLocation}
-            style={styles.input}
-            maxLength={120}
-            editable={!saving}
-          />
+          <View style={styles.inputWrapper}>
+            <MaterialIcons
+              name="location-on"
+              size={20}
+              color="#64748B"
+              style={styles.inputIcon}
+            />
 
-          <Text style={styles.label}>
-            Short bio
-          </Text>
+            <TextInput
+              placeholder="Example: Johannesburg"
+              placeholderTextColor="#94A3B8"
+              value={location}
+              onChangeText={setLocation}
+              style={styles.input}
+              maxLength={120}
+              editable={!saving}
+            />
+          </View>
 
-          <TextInput
-            placeholder="Tell the community a little about yourself..."
-            placeholderTextColor="#94A3B8"
-            value={bio}
-            onChangeText={setBio}
-            multiline
-            textAlignVertical="top"
-            maxLength={250}
+          {/* BIO */}
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>
+              Short bio
+            </Text>
+
+            <Text style={styles.characterCountTop}>
+              {bio.length}/250
+            </Text>
+          </View>
+
+          <View
             style={[
-              styles.input,
-              styles.bioInput,
+              styles.inputWrapper,
+              styles.bioWrapper,
             ]}
-            editable={!saving}
-          />
+          >
+            <MaterialIcons
+              name="description"
+              size={20}
+              color="#64748B"
+              style={styles.bioIcon}
+            />
 
-          <Text style={styles.characterCount}>
-            {bio.length}/250
-          </Text>
+            <TextInput
+              placeholder="Tell the community a little about yourself..."
+              placeholderTextColor="#94A3B8"
+              value={bio}
+              onChangeText={setBio}
+              multiline
+              textAlignVertical="top"
+              maxLength={250}
+              style={[
+                styles.input,
+                styles.bioInput,
+              ]}
+              editable={!saving}
+            />
+          </View>
 
-          <Text style={styles.sectionTitle}>
-            Protected Account Information
-          </Text>
+          {/* PROTECTED INFORMATION */}
+          <View
+            style={[
+              styles.sectionHeader,
+              styles.protectedSectionHeader,
+            ]}
+          >
+            <View style={styles.protectedSectionIcon}>
+              <MaterialIcons
+                name="shield"
+                size={19}
+                color="#2563EB"
+              />
+            </View>
 
+            <View>
+              <Text style={styles.sectionTitle}>
+                Protected Account Information
+              </Text>
+
+              <Text style={styles.sectionSubtitle}>
+                These details are managed securely.
+              </Text>
+            </View>
+          </View>
+
+          {/* EMAIL */}
           <Text style={styles.label}>
             Email address
           </Text>
 
           <View style={styles.protectedField}>
+            <View style={styles.protectedIcon}>
+              <MaterialIcons
+                name="email"
+                size={19}
+                color="#64748B"
+              />
+            </View>
+
             <Text
               style={styles.protectedValue}
               numberOfLines={1}
@@ -398,35 +537,65 @@ function EditProfile({ navigation }) {
               {email || "Email unavailable"}
             </Text>
 
-            <Text style={styles.lockIcon}>
-              🔒
+            <MaterialIcons
+              name="lock"
+              size={18}
+              color="#94A3B8"
+            />
+          </View>
+
+          <View style={styles.helpRow}>
+            <MaterialIcons
+              name="info-outline"
+              size={14}
+              color="#94A3B8"
+            />
+
+            <Text style={styles.protectedHelp}>
+              The email address cannot be changed from
+              this screen.
             </Text>
           </View>
 
-          <Text style={styles.protectedHelp}>
-            The email address cannot be changed from
-            this screen.
-          </Text>
-
+          {/* ROLE */}
           <Text style={styles.label}>
             Account role
           </Text>
 
           <View style={styles.protectedField}>
+            <View style={styles.protectedIcon}>
+              <MaterialIcons
+                name="admin-panel-settings"
+                size={19}
+                color="#64748B"
+              />
+            </View>
+
             <Text style={styles.protectedValue}>
               {role}
             </Text>
 
-            <Text style={styles.lockIcon}>
-              🔒
+            <MaterialIcons
+              name="lock"
+              size={18}
+              color="#94A3B8"
+            />
+          </View>
+
+          <View style={styles.helpRow}>
+            <MaterialIcons
+              name="info-outline"
+              size={14}
+              color="#94A3B8"
+            />
+
+            <Text style={styles.protectedHelp}>
+              Your account role is protected and cannot
+              be edited.
             </Text>
           </View>
 
-          <Text style={styles.protectedHelp}>
-            Your account role is protected and cannot
-            be edited.
-          </Text>
-
+          {/* SAVE */}
           <TouchableOpacity
             style={[
               styles.saveButton,
@@ -434,6 +603,7 @@ function EditProfile({ navigation }) {
             ]}
             onPress={saveProfile}
             disabled={saving}
+            activeOpacity={0.85}
           >
             {saving ? (
               <View style={styles.buttonContent}>
@@ -447,27 +617,48 @@ function EditProfile({ navigation }) {
                 </Text>
               </View>
             ) : (
-              <Text style={styles.saveButtonText}>
-                Save Changes
-              </Text>
+              <View style={styles.buttonContent}>
+                <MaterialIcons
+                  name="save"
+                  size={20}
+                  color="#FFFFFF"
+                />
+
+                <Text style={styles.saveButtonText}>
+                  Save Changes
+                </Text>
+              </View>
             )}
           </TouchableOpacity>
 
+          {/* CANCEL */}
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={() => navigation.goBack()}
             disabled={saving}
+            activeOpacity={0.8}
           >
+            <MaterialIcons
+              name="close"
+              size={19}
+              color="#16A34A"
+            />
+
             <Text style={styles.cancelButtonText}>
               Cancel
             </Text>
           </TouchableOpacity>
         </View>
 
+        {/* INFORMATION CARD */}
         <View style={styles.informationCard}>
-          <Text style={styles.informationIcon}>
-            🌱
-          </Text>
+          <View style={styles.informationIcon}>
+            <MaterialIcons
+              name="volunteer-activism"
+              size={24}
+              color="#16A34A"
+            />
+          </View>
 
           <View style={styles.informationContent}>
             <Text style={styles.informationTitle}>
@@ -476,8 +667,8 @@ function EditProfile({ navigation }) {
 
             <Text style={styles.informationText}>
               Keep your contact details current so
-              other community members and
-              organisations can coordinate support.
+              community members and organisations can
+              coordinate support more easily.
             </Text>
           </View>
         </View>
@@ -500,6 +691,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  /* LOADING */
+
   loadingContainer: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -507,36 +700,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  loadingIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
   loadingText: {
     color: "#64748B",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
-    marginTop: 14,
+    marginTop: 10,
   },
+
+  /* HEADER */
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 15,
-    marginBottom: 22,
+    marginBottom: 20,
   },
 
   backButton: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: 15,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#BBF7D0",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 13,
-  },
-
-  backButtonText: {
-    color: "#166534",
-    fontSize: 32,
-    lineHeight: 34,
+    marginRight: 12,
   },
 
   headerTextContainer: {
@@ -545,15 +746,30 @@ const styles = StyleSheet.create({
 
   heading: {
     color: "#14532D",
-    fontSize: 28,
+    fontSize: 27,
     fontWeight: "800",
   },
 
   subtitle: {
     color: "#64748B",
-    fontSize: 13,
-    marginTop: 3,
+    fontSize: 12,
+    marginTop: 4,
+    lineHeight: 17,
   },
+
+  headerIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+
+  /* PROFILE PREVIEW */
 
   profilePreview: {
     flexDirection: "row",
@@ -561,31 +777,50 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0FDF4",
     borderWidth: 1,
     borderColor: "#BBF7D0",
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 17,
     marginBottom: 17,
   },
 
+  avatarContainer: {
+    position: "relative",
+    marginRight: 15,
+  },
+
   avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: "#16A34A",
     borderWidth: 4,
     borderColor: "#DCFCE7",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 15,
   },
 
   avatarText: {
     color: "#FFFFFF",
-    fontSize: 27,
+    fontSize: 26,
     fontWeight: "800",
+  },
+
+  avatarCheck: {
+    position: "absolute",
+    right: -1,
+    bottom: -1,
+    width: 21,
+    height: 21,
+    borderRadius: 11,
+    backgroundColor: "#16A34A",
+    borderWidth: 2,
+    borderColor: "#F0FDF4",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   previewContent: {
     flex: 1,
+    minWidth: 0,
   },
 
   previewName: {
@@ -594,18 +829,27 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  previewEmailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+  },
+
   previewEmail: {
+    flex: 1,
     color: "#64748B",
     fontSize: 12,
-    marginTop: 4,
+    marginLeft: 5,
   },
 
   roleBadge: {
     alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#DCFCE7",
     borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     marginTop: 8,
   },
 
@@ -613,58 +857,134 @@ const styles = StyleSheet.create({
     color: "#16A34A",
     fontSize: 11,
     fontWeight: "800",
+    marginLeft: 4,
   },
+
+  /* FORM */
 
   formCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#DCFCE7",
+    borderColor: "#E2E8F0",
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 19,
+    marginTop: 2,
+  },
+
+  sectionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#F0FDF4",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
   },
 
   sectionTitle: {
     color: "#166534",
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
-    borderLeftWidth: 4,
-    borderLeftColor: "#22C55E",
-    paddingLeft: 9,
-    marginBottom: 17,
-    marginTop: 5,
   },
+
+  sectionSubtitle: {
+    color: "#94A3B8",
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  protectedSectionHeader: {
+    marginTop: 15,
+  },
+
+  protectedSectionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
+  },
+
+  /* LABELS */
 
   label: {
     color: "#1E293B",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     marginBottom: 8,
   },
 
-  input: {
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  characterCountTop: {
+    color: "#94A3B8",
+    fontSize: 10,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+
+  /* INPUTS */
+
+  inputWrapper: {
     minHeight: 55,
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#CBD5E1",
     borderRadius: 15,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    marginBottom: 17,
+  },
+
+  inputIcon: {
+    marginLeft: 15,
+  },
+
+  input: {
+    flex: 1,
+    minHeight: 53,
     color: "#1E293B",
-    fontSize: 15,
-    marginBottom: 18,
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 13,
+  },
+
+  bioWrapper: {
+    alignItems: "flex-start",
+    minHeight: 120,
+    marginBottom: 24,
+  },
+
+  bioIcon: {
+    marginLeft: 15,
+    marginTop: 16,
   },
 
   bioInput: {
-    height: 120,
+    height: 118,
   },
 
-  characterCount: {
-    color: "#94A3B8",
-    fontSize: 11,
-    textAlign: "right",
-    marginTop: -13,
-    marginBottom: 23,
-  },
+  /* PROTECTED FIELDS */
 
   protectedField: {
     minHeight: 55,
@@ -672,29 +992,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 15,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
+  },
+
+  protectedIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#E2E8F0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
   },
 
   protectedValue: {
     flex: 1,
     color: "#64748B",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
   },
 
-  lockIcon: {
-    fontSize: 15,
-    marginLeft: 10,
+  helpRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 6,
+    marginBottom: 17,
   },
 
   protectedHelp: {
+    flex: 1,
     color: "#94A3B8",
-    fontSize: 11,
-    marginTop: 6,
-    marginBottom: 18,
+    fontSize: 10,
+    lineHeight: 15,
+    marginLeft: 5,
   },
+
+  /* BUTTONS */
 
   saveButton: {
     minHeight: 56,
@@ -703,6 +1038,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 8,
+    shadowColor: "#16A34A",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    elevation: 3,
   },
 
   disabledButton: {
@@ -724,32 +1067,42 @@ const styles = StyleSheet.create({
 
   cancelButton: {
     minHeight: 52,
-    borderWidth: 1,
-    borderColor: "#BBF7D0",
-    borderRadius: 15,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 15,
+    marginTop: 11,
   },
 
   cancelButtonText: {
     color: "#16A34A",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
+    marginLeft: 5,
   },
+
+  /* INFORMATION CARD */
 
   informationCard: {
     flexDirection: "row",
     backgroundColor: "#F0FDF4",
     borderWidth: 1,
     borderColor: "#BBF7D0",
-    borderRadius: 17,
+    borderRadius: 18,
     padding: 16,
     marginTop: 16,
   },
 
   informationIcon: {
-    fontSize: 23,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "#DCFCE7",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
 
@@ -765,8 +1118,8 @@ const styles = StyleSheet.create({
 
   informationText: {
     color: "#15803D",
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     marginTop: 4,
   },
 });

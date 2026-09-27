@@ -2,10 +2,12 @@
   "expo": {
     "name": "Ubuntu-Connect",
     "slug": "Ubuntu-Connect",
+    "scheme": "ubuntuconnect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+
     "android": {
       "package": "com.sabelo073.ubuntuconnect",
       "adaptiveIcon": {
@@ -13,22 +15,25 @@
         "backgroundColor": "#ffffff"
       }
     },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sabelo073.ubuntuconnect"
     },
+
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-status-bar",
-      "expo-font",
-      "expo-asset"
-    ],
+
     "extra": {
       "eas": {
         "projectId": "629d2b41-8cef-40f7-bdf4-051626b6cfa4"
       }
-    }
+    },
+
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
+  
 }

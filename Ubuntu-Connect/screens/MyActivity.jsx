@@ -21,6 +21,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "../firebaseConfig";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 const MyActivity = ({ navigation }) => {
   const [donations, setDonations] = useState([]);
@@ -211,6 +212,7 @@ const MyActivity = ({ navigation }) => {
       return {
         badge: styles.approvedBadge,
         text: styles.approvedText,
+        icon: "check-circle",
       };
     }
 
@@ -218,12 +220,14 @@ const MyActivity = ({ navigation }) => {
       return {
         badge: styles.rejectedBadge,
         text: styles.rejectedText,
+        icon: "cancel",
       };
     }
 
     return {
       badge: styles.pendingBadge,
       text: styles.pendingText,
+      icon: "schedule",
     };
   };
 
@@ -259,6 +263,7 @@ const MyActivity = ({ navigation }) => {
             : styles.requestCard,
         ]}
       >
+        {/* ACTIVITY HEADER */}
         <View style={styles.activityHeader}>
           <View style={styles.titleContainer}>
             <View
@@ -269,9 +274,19 @@ const MyActivity = ({ navigation }) => {
                   : styles.requestIconContainer,
               ]}
             >
-              <Text style={styles.activityIcon}>
-                {isDonation ? "🎁" : "🙏"}
-              </Text>
+              <MaterialIcons
+                name={
+                  isDonation
+                    ? "card-giftcard"
+                    : "volunteer-activism"
+                }
+                size={25}
+                color={
+                  isDonation
+                    ? "#7C3AED"
+                    : "#2563EB"
+                }
+              />
             </View>
 
             <View style={styles.titleTextContainer}>
@@ -282,9 +297,18 @@ const MyActivity = ({ navigation }) => {
                 {title}
               </Text>
 
-              <Text style={styles.activityDate}>
-                Submitted {formatDate(item.createdAt)}
-              </Text>
+              <View style={styles.dateRow}>
+                <MaterialIcons
+                  name="event"
+                  size={13}
+                  color="#94A3B8"
+                />
+
+                <Text style={styles.activityDate}>
+                  Submitted{" "}
+                  {formatDate(item.createdAt)}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -294,6 +318,12 @@ const MyActivity = ({ navigation }) => {
               statusStyles.badge,
             ]}
           >
+            <MaterialIcons
+              name={statusStyles.icon}
+              size={13}
+              color={statusStyles.text.color}
+            />
+
             <Text
               style={[
                 styles.statusText,
@@ -305,11 +335,20 @@ const MyActivity = ({ navigation }) => {
           </View>
         </View>
 
+        {/* DETAILS */}
         <View style={styles.detailsContainer}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>
-              Category
-            </Text>
+            <View style={styles.detailLabelContainer}>
+              <MaterialIcons
+                name="category"
+                size={16}
+                color="#64748B"
+              />
+
+              <Text style={styles.detailLabel}>
+                Category
+              </Text>
+            </View>
 
             <Text style={styles.detailValue}>
               {item.category || "Not specified"}
@@ -319,19 +358,36 @@ const MyActivity = ({ navigation }) => {
           {isDonation ? (
             <>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>
-                  Condition
-                </Text>
+                <View style={styles.detailLabelContainer}>
+                  <MaterialIcons
+                    name="verified"
+                    size={16}
+                    color="#64748B"
+                  />
+
+                  <Text style={styles.detailLabel}>
+                    Condition
+                  </Text>
+                </View>
 
                 <Text style={styles.detailValue}>
-                  {item.condition || "Not specified"}
+                  {item.condition ||
+                    "Not specified"}
                 </Text>
               </View>
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>
-                  Delivery
-                </Text>
+                <View style={styles.detailLabelContainer}>
+                  <MaterialIcons
+                    name="local-shipping"
+                    size={16}
+                    color="#64748B"
+                  />
+
+                  <Text style={styles.detailLabel}>
+                    Delivery
+                  </Text>
+                </View>
 
                 <Text style={styles.detailValue}>
                   {item.deliveryMethod ||
@@ -342,19 +398,36 @@ const MyActivity = ({ navigation }) => {
           ) : (
             <>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>
-                  Quantity
-                </Text>
+                <View style={styles.detailLabelContainer}>
+                  <MaterialIcons
+                    name="inventory-2"
+                    size={16}
+                    color="#64748B"
+                  />
+
+                  <Text style={styles.detailLabel}>
+                    Quantity
+                  </Text>
+                </View>
 
                 <Text style={styles.detailValue}>
-                  {item.quantity || "Not specified"}
+                  {item.quantity ||
+                    "Not specified"}
                 </Text>
               </View>
 
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>
-                  Urgency
-                </Text>
+                <View style={styles.detailLabelContainer}>
+                  <MaterialIcons
+                    name="priority-high"
+                    size={16}
+                    color="#64748B"
+                  />
+
+                  <Text style={styles.detailLabel}>
+                    Urgency
+                  </Text>
+                </View>
 
                 <Text
                   style={[
@@ -370,6 +443,7 @@ const MyActivity = ({ navigation }) => {
           )}
         </View>
 
+        {/* DESCRIPTION */}
         {item.description ? (
           <Text
             style={styles.description}
@@ -379,23 +453,45 @@ const MyActivity = ({ navigation }) => {
           </Text>
         ) : null}
 
+        {/* LOCATION */}
         {location ? (
-          <Text style={styles.location}>
-            📍 {location}
-          </Text>
+          <View style={styles.locationContainer}>
+            <MaterialIcons
+              name="location-on"
+              size={17}
+              color="#64748B"
+            />
+
+            <Text style={styles.location}>
+              {location}
+            </Text>
+          </View>
         ) : null}
 
+        {/* STATUS NOTICE */}
         {status === "Pending" ? (
           <View style={styles.pendingNotice}>
+            <MaterialIcons
+              name="schedule"
+              size={17}
+              color="#D97706"
+            />
+
             <Text style={styles.pendingNoticeText}>
-              This submission is waiting for admin
-              review.
+              This submission is waiting for
+              admin review.
             </Text>
           </View>
         ) : null}
 
         {status === "Approved" ? (
           <View style={styles.approvedNotice}>
+            <MaterialIcons
+              name="check-circle"
+              size={17}
+              color="#16A34A"
+            />
+
             <Text style={styles.approvedNoticeText}>
               This submission was approved.
             </Text>
@@ -404,6 +500,12 @@ const MyActivity = ({ navigation }) => {
 
         {status === "Rejected" ? (
           <View style={styles.rejectedNotice}>
+            <MaterialIcons
+              name="cancel"
+              size={17}
+              color="#DC2626"
+            />
+
             <Text style={styles.rejectedNoticeText}>
               This submission was not approved.
             </Text>
@@ -418,10 +520,23 @@ const MyActivity = ({ navigation }) => {
       ? donationsLoading
       : requestsLoading;
 
+  const approvedCount = [
+    ...donations,
+    ...requests,
+  ].filter(
+    (item) => item.status === "Approved"
+  ).length;
+
   if (!currentUser) {
     return (
       <SafeAreaView style={styles.centerContainer}>
-        <Text style={styles.emptyIcon}>🔐</Text>
+        <View style={styles.loginIconContainer}>
+          <MaterialIcons
+            name="lock-outline"
+            size={45}
+            color="#2563EB"
+          />
+        </View>
 
         <Text style={styles.emptyTitle}>
           Login Required
@@ -437,6 +552,12 @@ const MyActivity = ({ navigation }) => {
             navigation.replace("Login")
           }
         >
+          <MaterialIcons
+            name="login"
+            size={18}
+            color="#FFFFFF"
+          />
+
           <Text style={styles.primaryButtonText}>
             Go to Login
           </Text>
@@ -450,14 +571,18 @@ const MyActivity = ({ navigation }) => {
       style={styles.container}
       edges={["top", "left", "right"]}
     >
+      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
         >
-          <Text style={styles.backButtonText}>
-            ‹
-          </Text>
+          <MaterialIcons
+            name="arrow-back"
+            size={23}
+            color="#166534"
+          />
         </TouchableOpacity>
 
         <View style={styles.headerTextContainer}>
@@ -471,11 +596,21 @@ const MyActivity = ({ navigation }) => {
         </View>
       </View>
 
+      {/* SUMMARY */}
       <View style={styles.summaryContainer}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryIcon}>
-            🎁
-          </Text>
+        <View
+          style={[
+            styles.summaryCard,
+            styles.donationSummaryCard,
+          ]}
+        >
+          <View style={styles.summaryIconContainer}>
+            <MaterialIcons
+              name="card-giftcard"
+              size={21}
+              color="#7C3AED"
+            />
+          </View>
 
           <Text style={styles.summaryNumber}>
             {donations.length}
@@ -486,10 +621,19 @@ const MyActivity = ({ navigation }) => {
           </Text>
         </View>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryIcon}>
-            🙏
-          </Text>
+        <View
+          style={[
+            styles.summaryCard,
+            styles.requestSummaryCard,
+          ]}
+        >
+          <View style={styles.summaryIconContainer}>
+            <MaterialIcons
+              name="volunteer-activism"
+              size={21}
+              color="#2563EB"
+            />
+          </View>
 
           <Text style={styles.summaryNumber}>
             {requests.length}
@@ -500,18 +644,22 @@ const MyActivity = ({ navigation }) => {
           </Text>
         </View>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryIcon}>
-            ✅
-          </Text>
+        <View
+          style={[
+            styles.summaryCard,
+            styles.approvedSummaryCard,
+          ]}
+        >
+          <View style={styles.summaryIconContainer}>
+            <MaterialIcons
+              name="check-circle"
+              size={21}
+              color="#16A34A"
+            />
+          </View>
 
           <Text style={styles.summaryNumber}>
-            {
-              [...donations, ...requests].filter(
-                (item) =>
-                  item.status === "Approved"
-              ).length
-            }
+            {approvedCount}
           </Text>
 
           <Text style={styles.summaryLabel}>
@@ -520,6 +668,7 @@ const MyActivity = ({ navigation }) => {
         </View>
       </View>
 
+      {/* TABS */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[
@@ -527,8 +676,20 @@ const MyActivity = ({ navigation }) => {
             activeTab === "Donations" &&
               styles.activeTabButton,
           ]}
-          onPress={() => changeTab("Donations")}
+          onPress={() =>
+            changeTab("Donations")
+          }
         >
+          <MaterialIcons
+            name="card-giftcard"
+            size={18}
+            color={
+              activeTab === "Donations"
+                ? "#FFFFFF"
+                : "#64748B"
+            }
+          />
+
           <Text
             style={[
               styles.tabText,
@@ -546,8 +707,20 @@ const MyActivity = ({ navigation }) => {
             activeTab === "Requests" &&
               styles.activeTabButton,
           ]}
-          onPress={() => changeTab("Requests")}
+          onPress={() =>
+            changeTab("Requests")
+          }
         >
+          <MaterialIcons
+            name="volunteer-activism"
+            size={18}
+            color={
+              activeTab === "Requests"
+                ? "#FFFFFF"
+                : "#64748B"
+            }
+          />
+
           <Text
             style={[
               styles.tabText,
@@ -560,6 +733,7 @@ const MyActivity = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
+      {/* FILTERS */}
       <View style={styles.filterContainer}>
         {[
           "All",
@@ -591,6 +765,7 @@ const MyActivity = ({ navigation }) => {
         ))}
       </View>
 
+      {/* CONTENT */}
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator
@@ -618,15 +793,24 @@ const MyActivity = ({ navigation }) => {
               <View
                 style={styles.emptyIconContainer}
               >
-                <Text style={styles.emptyIcon}>
-                  {activeTab === "Donations"
-                    ? "🎁"
-                    : "🙏"}
-                </Text>
+                <MaterialIcons
+                  name={
+                    activeTab === "Donations"
+                      ? "card-giftcard"
+                      : "volunteer-activism"
+                  }
+                  size={48}
+                  color={
+                    activeTab === "Donations"
+                      ? "#7C3AED"
+                      : "#2563EB"
+                  }
+                />
               </View>
 
               <Text style={styles.emptyTitle}>
-                No {statusFilter !== "All"
+                No{" "}
+                {statusFilter !== "All"
                   ? statusFilter
                   : ""}{" "}
                 {activeTab}
@@ -651,6 +835,16 @@ const MyActivity = ({ navigation }) => {
                     )
                   }
                 >
+                  <MaterialIcons
+                    name={
+                      activeTab === "Donations"
+                        ? "card-giftcard"
+                        : "volunteer-activism"
+                    }
+                    size={18}
+                    color="#FFFFFF"
+                  />
+
                   <Text
                     style={styles.primaryButtonText}
                   >
@@ -681,25 +875,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: 14,
-    marginBottom: 20,
+    marginBottom: 19,
   },
 
   backButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 45,
+    height: 45,
+    borderRadius: 15,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#DCFCE7",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 13,
-  },
-
-  backButtonText: {
-    color: "#166534",
-    fontSize: 32,
-    lineHeight: 34,
   },
 
   headerTextContainer: {
@@ -720,44 +908,63 @@ const styles = StyleSheet.create({
 
   summaryContainer: {
     flexDirection: "row",
-    marginBottom: 20,
+    marginBottom: 19,
   },
 
   summaryCard: {
     flex: 1,
-    backgroundColor: "#F0FDF4",
-    borderWidth: 1,
-    borderColor: "#BBF7D0",
-    borderRadius: 16,
-    paddingVertical: 13,
+    borderRadius: 17,
+    paddingVertical: 12,
     alignItems: "center",
     marginHorizontal: 3,
+    borderWidth: 1,
   },
 
-  summaryIcon: {
-    fontSize: 20,
+  donationSummaryCard: {
+    backgroundColor: "#FAF5FF",
+    borderColor: "#E9D5FF",
+  },
+
+  requestSummaryCard: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "#DBEAFE",
+  },
+
+  approvedSummaryCard: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
+  },
+
+  summaryIconContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 3,
   },
 
   summaryNumber: {
-    color: "#16A34A",
+    color: "#1E293B",
     fontSize: 21,
     fontWeight: "800",
-    marginTop: 4,
+    marginTop: 2,
   },
 
   summaryLabel: {
-    color: "#166534",
+    color: "#64748B",
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: "700",
     marginTop: 2,
   },
 
   tabContainer: {
     flexDirection: "row",
     backgroundColor: "#E2E8F0",
-    borderRadius: 15,
+    borderRadius: 16,
     padding: 4,
-    marginBottom: 14,
+    marginBottom: 13,
   },
 
   tabButton: {
@@ -766,6 +973,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
   },
 
   activeTabButton: {
@@ -774,7 +983,7 @@ const styles = StyleSheet.create({
 
   tabText: {
     color: "#64748B",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
   },
 
@@ -785,7 +994,7 @@ const styles = StyleSheet.create({
   filterContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: 15,
+    marginBottom: 13,
   },
 
   filterButton: {
@@ -821,12 +1030,21 @@ const styles = StyleSheet.create({
 
   activityCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 19,
+    borderRadius: 20,
     padding: 17,
     marginBottom: 13,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
+    borderColor: "#E2E8F0",
     borderLeftWidth: 4,
+
+    shadowColor: "#1E293B",
+    shadowOpacity: 0.04,
+    shadowRadius: 7,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    elevation: 2,
   },
 
   donationCard: {
@@ -850,24 +1068,20 @@ const styles = StyleSheet.create({
   },
 
   activityIconContainer: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 15,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 11,
   },
 
   donationIconContainer: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: "#F3E8FF",
   },
 
   requestIconContainer: {
     backgroundColor: "#DBEAFE",
-  },
-
-  activityIcon: {
-    fontSize: 21,
   },
 
   titleTextContainer: {
@@ -877,19 +1091,28 @@ const styles = StyleSheet.create({
   activityTitle: {
     color: "#1E293B",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
+  },
+
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+    gap: 4,
   },
 
   activityDate: {
     color: "#94A3B8",
     fontSize: 11,
-    marginTop: 4,
   },
 
   statusBadge: {
     borderRadius: 20,
     paddingHorizontal: 9,
     paddingVertical: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
 
   statusText: {
@@ -923,7 +1146,7 @@ const styles = StyleSheet.create({
 
   detailsContainer: {
     backgroundColor: "#F8FAFC",
-    borderRadius: 12,
+    borderRadius: 13,
     padding: 12,
     marginTop: 14,
   },
@@ -931,7 +1154,14 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 7,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  detailLabelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
 
   detailLabel: {
@@ -959,61 +1189,93 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    gap: 4,
+  },
+
   location: {
     color: "#475569",
     fontSize: 12,
-    marginTop: 10,
+    flex: 1,
   },
 
   pendingNotice: {
     backgroundColor: "#FFFBEB",
-    borderRadius: 10,
+    borderRadius: 11,
     padding: 10,
     marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
   },
 
   pendingNoticeText: {
     color: "#A16207",
     fontSize: 11,
     fontWeight: "600",
+    flex: 1,
   },
 
   approvedNotice: {
     backgroundColor: "#F0FDF4",
-    borderRadius: 10,
+    borderRadius: 11,
     padding: 10,
     marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
   },
 
   approvedNoticeText: {
     color: "#15803D",
     fontSize: 11,
     fontWeight: "600",
+    flex: 1,
   },
 
   rejectedNotice: {
     backgroundColor: "#FEF2F2",
-    borderRadius: 10,
+    borderRadius: 11,
     padding: 10,
     marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
   },
 
   rejectedNoticeText: {
     color: "#B91C1C",
     fontSize: 11,
     fontWeight: "600",
+    flex: 1,
   },
 
   centerContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 30,
   },
 
   loadingText: {
     color: "#64748B",
     marginTop: 12,
     fontWeight: "600",
+  },
+
+  loginIconContainer: {
+    width: 95,
+    height: 95,
+    borderRadius: 48,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
   },
 
   emptyListContainer: {
@@ -1029,17 +1291,15 @@ const styles = StyleSheet.create({
   },
 
   emptyIconContainer: {
-    width: 95,
-    height: 95,
-    borderRadius: 48,
-    backgroundColor: "#DCFCE7",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 17,
-  },
-
-  emptyIcon: {
-    fontSize: 44,
   },
 
   emptyTitle: {
@@ -1063,6 +1323,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginTop: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
   },
 
   primaryButtonText: {
@@ -1071,3 +1334,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
+

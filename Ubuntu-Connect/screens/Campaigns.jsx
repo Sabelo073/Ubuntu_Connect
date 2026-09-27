@@ -12,7 +12,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import {
   collection,
@@ -160,6 +160,8 @@ const Campaigns = ({ navigation }) => {
       return {
         container: styles.completedBadge,
         text: styles.completedText,
+        icon: "check-circle",
+        iconColor: "#2563EB",
       };
     }
 
@@ -167,12 +169,16 @@ const Campaigns = ({ navigation }) => {
       return {
         container: styles.closedBadge,
         text: styles.closedText,
+        icon: "lock",
+        iconColor: "#475569",
       };
     }
 
     return {
       container: styles.activeBadge,
       text: styles.activeText,
+      icon: "radio-button-checked",
+      iconColor: "#16A34A",
     };
   };
 
@@ -204,9 +210,18 @@ const Campaigns = ({ navigation }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
+        <View style={styles.loadingIconContainer}>
+          <MaterialIcons
+            name="campaign"
+            size={30}
+            color="#2563EB"
+          />
+        </View>
+
         <ActivityIndicator
-          size="large"
+          size="small"
           color="#2563EB"
+          style={styles.loadingSpinner}
         />
 
         <Text style={styles.loadingText}>
@@ -223,25 +238,85 @@ const Campaigns = ({ navigation }) => {
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.heading}>
-          Community Campaigns
-        </Text>
 
-        <Text style={styles.subtitle}>
-          Support causes making a difference in the
-          community.
-        </Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation?.goBack()}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons
+              name="arrow-back"
+              size={23}
+              color="#1E293B"
+            />
+          </TouchableOpacity>
 
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.heading}>
+              Community Campaigns
+            </Text>
+
+            <Text style={styles.subtitle}>
+              Support causes making a difference in
+              the community.
+            </Text>
+          </View>
+
+          <View style={styles.headerIcon}>
+            <MaterialIcons
+              name="campaign"
+              size={25}
+              color="#F59E0B"
+            />
+          </View>
+        </View>
+
+        {/* Campaign Summary */}
+        {campaigns.length > 0 && (
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryIcon}>
+              <MaterialIcons
+                name="volunteer-activism"
+                size={23}
+                color="#7C3AED"
+              />
+            </View>
+
+            <View style={styles.summaryContent}>
+              <Text style={styles.summaryTitle}>
+                Make an Impact
+              </Text>
+
+              <Text style={styles.summaryText}>
+                {campaigns.length} campaign
+                {campaigns.length !== 1 ? "s" : ""}{" "}
+                currently available for community
+                support.
+              </Text>
+            </View>
+
+            <MaterialIcons
+              name="arrow-forward"
+              size={20}
+              color="#94A3B8"
+            />
+          </View>
+        )}
+
+        {/* Empty State */}
         {campaigns.length === 0 ? (
           <View style={styles.emptyContainer}>
-           <View style={styles.emptyIconContainer}>
-  <Ionicons
-    name="megaphone"
-    size={52}
-    color="#F59E0B"
-  />
-</View>
+            <View style={styles.emptyIconContainer}>
+              <MaterialIcons
+                name="campaign"
+                size={52}
+                color="#F59E0B"
+              />
+            </View>
 
             <Text style={styles.emptyTitle}>
               No Campaigns Yet
@@ -275,23 +350,26 @@ const Campaigns = ({ navigation }) => {
                 key={campaign.id}
                 style={styles.card}
               >
+
+                {/* Badges */}
                 <View style={styles.badgeRow}>
-                  {campaign.urgent === true && (
-                    <View
-                      style={styles.urgentBadge}
-                    >
-                      <View style={styles.urgentContent}>
-  <Ionicons
-    name="warning"
-    size={14}
-    color="#DC2626"
-  />
-  <Text style={styles.urgentText}>
-    Urgent
-  </Text>
-</View>
-                    </View>
-                  )}
+                  <View style={styles.badgeLeft}>
+                    {campaign.urgent === true && (
+                      <View style={styles.urgentBadge}>
+                        <MaterialIcons
+                          name="warning"
+                          size={14}
+                          color="#DC2626"
+                        />
+
+                        <Text
+                          style={styles.urgentText}
+                        >
+                          Urgent
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
                   <View
                     style={[
@@ -299,6 +377,12 @@ const Campaigns = ({ navigation }) => {
                       statusStyle.container,
                     ]}
                   >
+                    <MaterialIcons
+                      name={statusStyle.icon}
+                      size={14}
+                      color={statusStyle.iconColor}
+                    />
+
                     <Text
                       style={[
                         styles.statusText,
@@ -310,16 +394,30 @@ const Campaigns = ({ navigation }) => {
                   </View>
                 </View>
 
-                <Text style={styles.title}>
-                  {campaign.title ||
-                    "Community Campaign"}
-                </Text>
+                {/* Campaign Title */}
+                <View style={styles.titleRow}>
+                  <View style={styles.campaignIcon}>
+                    <MaterialIcons
+                      name="campaign"
+                      size={22}
+                      color="#2563EB"
+                    />
+                  </View>
 
-                <Text style={styles.organization}>
-                  {campaign.organization ||
-                    "Ubuntu Connect"}
-                </Text>
+                  <View style={styles.titleContent}>
+                    <Text style={styles.title}>
+                      {campaign.title ||
+                        "Community Campaign"}
+                    </Text>
 
+                    <Text style={styles.organization}>
+                      {campaign.organization ||
+                        "Ubuntu Connect"}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Description */}
                 {campaign.description ? (
                   <Text
                     style={styles.description}
@@ -329,62 +427,125 @@ const Campaigns = ({ navigation }) => {
                   </Text>
                 ) : null}
 
+                {/* Location */}
                 {campaign.location ? (
-                 <View style={styles.locationRow}>
-  <Ionicons
-    name="location"
-    size={14}
-    color="#475569"
-  />
-  <Text style={styles.location}>
-    {campaign.location}
-  </Text>
-</View>
-                ) : null}
+                  <View style={styles.locationRow}>
+                    <MaterialIcons
+                      name="location-on"
+                      size={17}
+                      color="#2563EB"
+                    />
 
-                <View style={styles.statsContainer}>
-                  <View style={styles.statColumn}>
-                    <Text style={styles.label}>
-                      Goal
-                    </Text>
-
-                    <Text style={styles.value}>
-                      {progress.goalText}
+                    <Text style={styles.location}>
+                      {campaign.location}
                     </Text>
                   </View>
+                ) : null}
 
-                  <View
-                    style={[
-                      styles.statColumn,
-                      styles.progressColumn,
-                    ]}
-                  >
-                    <Text style={styles.label}>
-                      Progress
-                    </Text>
+                {/* Campaign Type */}
+                <View style={styles.typeRow}>
+                  <View style={styles.typeBadge}>
+                    <MaterialIcons
+                      name={
+                        campaign.campaignType ===
+                        "Money"
+                          ? "payments"
+                          : "inventory-2"
+                      }
+                      size={15}
+                      color="#7C3AED"
+                    />
 
-                    <Text style={styles.value}>
-                      {progress.progressText}
+                    <Text style={styles.typeText}>
+                      {campaign.campaignType ||
+                        "Items"}{" "}
+                      Campaign
                     </Text>
                   </View>
                 </View>
 
-                <View style={styles.progressHeader}>
-                  <Text
-                    style={
-                      styles.progressPercentage
-                    }
-                  >
-                    {Math.round(progressPercentage)}%
-                    complete
-                  </Text>
+                {/* Stats */}
+                <View style={styles.statsContainer}>
+                  <View style={styles.statBox}>
+                    <View style={styles.statIcon}>
+                      <MaterialIcons
+                        name="flag"
+                        size={18}
+                        color="#2563EB"
+                      />
+                    </View>
 
-                  <Text style={styles.endDate}>
-                    Ends:{" "}
-                    {formatEndDate(
-                      campaign.endDate
-                    )}
-                  </Text>
+                    <View>
+                      <Text style={styles.label}>
+                        Goal
+                      </Text>
+
+                      <Text style={styles.value}>
+                        {progress.goalText}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.statBox,
+                      styles.progressStat,
+                    ]}
+                  >
+                    <View style={styles.statIcon}>
+                      <MaterialIcons
+                        name="trending-up"
+                        size={18}
+                        color="#22C55E"
+                      />
+                    </View>
+
+                    <View>
+                      <Text style={styles.label}>
+                        Progress
+                      </Text>
+
+                      <Text style={styles.value}>
+                        {progress.progressText}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Progress */}
+                <View style={styles.progressHeader}>
+                  <View style={styles.progressPercentageRow}>
+                    <MaterialIcons
+                      name="bar-chart"
+                      size={16}
+                      color="#16A34A"
+                    />
+
+                    <Text
+                      style={
+                        styles.progressPercentage
+                      }
+                    >
+                      {Math.round(
+                        progressPercentage
+                      )}
+                      % complete
+                    </Text>
+                  </View>
+
+                  <View style={styles.endDateRow}>
+                    <MaterialIcons
+                      name="event"
+                      size={14}
+                      color="#94A3B8"
+                    />
+
+                    <Text style={styles.endDate}>
+                      {formatEndDate(
+                        campaign.endDate
+                      )}
+                    </Text>
+                  </View>
                 </View>
 
                 <View style={styles.progressBar}>
@@ -398,6 +559,7 @@ const Campaigns = ({ navigation }) => {
                   />
                 </View>
 
+                {/* Support Button */}
                 <TouchableOpacity
                   style={[
                     styles.supportButton,
@@ -408,7 +570,20 @@ const Campaigns = ({ navigation }) => {
                     supportCampaign(campaign)
                   }
                   disabled={campaignUnavailable}
+                  activeOpacity={0.85}
                 >
+                  <MaterialIcons
+                    name={
+                      campaignUnavailable
+                        ? status === "Completed"
+                          ? "check-circle"
+                          : "lock"
+                        : "volunteer-activism"
+                    }
+                    size={20}
+                    color="#FFFFFF"
+                  />
+
                   <Text style={styles.supportText}>
                     {campaignUnavailable
                       ? status === "Completed"
@@ -416,13 +591,21 @@ const Campaigns = ({ navigation }) => {
                         : "Campaign Closed"
                       : "Support Campaign"}
                   </Text>
+
+                  {!campaignUnavailable && (
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={19}
+                      color="#FFFFFF"
+                    />
+                  )}
                 </TouchableOpacity>
               </View>
             );
           })
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 70 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -437,6 +620,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  scrollContent: {
+    paddingTop: 10,
+  },
+
+  /* Loading */
   loadingContainer: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -444,35 +632,119 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  loadingIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingSpinner: {
+    marginTop: 18,
+  },
+
   loadingText: {
     color: "#64748B",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
-    marginTop: 14,
+    marginTop: 10,
+  },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 22,
+  },
+
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginRight: 12,
+  },
+
+  headerTextContainer: {
+    flex: 1,
   },
 
   heading: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "800",
     color: "#1E293B",
-    marginTop: 20,
   },
 
   subtitle: {
-    fontSize: 15,
+    fontSize: 13,
     color: "#64748B",
-    marginTop: 8,
-    marginBottom: 25,
-    lineHeight: 22,
+    marginTop: 4,
+    lineHeight: 19,
   },
 
+  headerIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Summary */
+  summaryCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 15,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+
+  summaryIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 13,
+    backgroundColor: "#F3E8FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+
+  summaryContent: {
+    flex: 1,
+  },
+
+  summaryTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#1E293B",
+  },
+
+  summaryText: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 3,
+    lineHeight: 17,
+  },
+
+  /* Card */
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: 22,
+    padding: 18,
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
+    borderColor: "#E2E8F0",
 
     shadowColor: "#000000",
     shadowOffset: {
@@ -481,20 +753,27 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.05,
     shadowRadius: 10,
-    elevation: 4,
+    elevation: 3,
   },
 
+  /* Badges */
   badgeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 15,
+  },
+
+  badgeLeft: {
+    flex: 1,
   },
 
   urgentBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     alignSelf: "flex-start",
     backgroundColor: "#FEE2E2",
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20,
   },
@@ -502,19 +781,22 @@ const styles = StyleSheet.create({
   urgentText: {
     color: "#DC2626",
     fontWeight: "700",
-    fontSize: 12,
+    fontSize: 11,
+    marginLeft: 5,
   },
 
   statusBadge: {
-    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20,
-    marginLeft: "auto",
   },
 
   statusText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
+    marginLeft: 5,
   },
 
   activeBadge: {
@@ -541,57 +823,128 @@ const styles = StyleSheet.create({
     color: "#475569",
   },
 
+  /* Title */
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  campaignIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+
+  titleContent: {
+    flex: 1,
+  },
+
   title: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 19,
+    fontWeight: "800",
     color: "#1E293B",
-    marginBottom: 6,
+    marginBottom: 3,
   },
 
   organization: {
     color: "#2563EB",
     fontWeight: "600",
-    marginBottom: 12,
+    fontSize: 13,
   },
 
+  /* Description */
   description: {
     color: "#64748B",
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 20,
     marginBottom: 12,
   },
 
-location: {
-  color: "#475569",
-  fontSize: 13,
-  marginLeft: 4,
-},
-
-  statsContainer: {
+  /* Location */
+  locationRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 18,
+    alignItems: "center",
+    marginBottom: 12,
   },
 
-  statColumn: {
+  location: {
+    color: "#475569",
+    fontSize: 12,
+    marginLeft: 5,
     flex: 1,
   },
 
-  progressColumn: {
-    alignItems: "flex-end",
+  /* Campaign Type */
+  typeRow: {
+    marginBottom: 18,
+  },
+
+  typeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#F5F3FF",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+
+  typeText: {
+    color: "#7C3AED",
+    fontSize: 11,
+    fontWeight: "700",
+    marginLeft: 5,
+  },
+
+  /* Stats */
+  statsContainer: {
+    flexDirection: "row",
+    marginBottom: 18,
+  },
+
+  statBox: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 14,
+    padding: 11,
+    marginRight: 8,
+  },
+
+  progressStat: {
+    marginRight: 0,
+  },
+
+  statIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
   },
 
   label: {
-    color: "#64748B",
-    fontSize: 13,
+    color: "#94A3B8",
+    fontSize: 10,
+    fontWeight: "600",
   },
 
   value: {
     color: "#1E293B",
-    fontWeight: "700",
-    fontSize: 15,
-    marginTop: 4,
+    fontWeight: "800",
+    fontSize: 12,
+    marginTop: 3,
   },
 
+  /* Progress */
   progressHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -599,24 +952,36 @@ location: {
     marginBottom: 8,
   },
 
+  progressPercentageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
   progressPercentage: {
     color: "#16A34A",
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "800",
+    marginLeft: 4,
+  },
+
+  endDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   endDate: {
     color: "#94A3B8",
-    fontSize: 11,
+    fontSize: 10,
+    marginLeft: 4,
   },
 
   progressBar: {
-    height: 10,
+    height: 9,
     width: "100%",
     backgroundColor: "#E2E8F0",
     borderRadius: 20,
     overflow: "hidden",
-    marginBottom: 20,
+    marginBottom: 18,
   },
 
   progressFill: {
@@ -625,26 +990,31 @@ location: {
     borderRadius: 20,
   },
 
+  /* Support */
   supportButton: {
-    backgroundColor: "#2563EB",
-    minHeight: 50,
-    paddingVertical: 15,
-    borderRadius: 14,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#2563EB",
+    minHeight: 50,
+    paddingVertical: 14,
+    paddingHorizontal: 15,
+    borderRadius: 14,
   },
 
   disabledButton: {
     backgroundColor: "#94A3B8",
-    opacity: 0.7,
+    opacity: 0.75,
   },
 
   supportText: {
     color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 15,
+    fontWeight: "800",
+    fontSize: 14,
+    marginHorizontal: 9,
   },
 
+  /* Empty */
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -662,13 +1032,9 @@ location: {
     marginBottom: 20,
   },
 
-  emptyIcon: {
-    fontSize: 52,
-  },
-
   emptyTitle: {
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#1E293B",
   },
 
@@ -676,17 +1042,7 @@ location: {
     color: "#64748B",
     textAlign: "center",
     marginTop: 10,
-    lineHeight: 23,
+    lineHeight: 22,
+    fontSize: 13,
   },
-  urgentContent: {
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 4,
-},
-
-locationRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 18,
-},
 });

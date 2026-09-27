@@ -27,6 +27,8 @@ import {
   SafeAreaView,
 } from "react-native-safe-area-context";
 
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
 import { auth, db } from "../firebaseConfig";
 
 function DeleteAccount({ navigation }) {
@@ -113,14 +115,6 @@ function DeleteAccount({ navigation }) {
         credential
       );
 
-      /*
-        Delete the Firestore profile before deleting
-        Firebase Authentication.
-
-        After the Auth account is deleted, the user
-        will no longer have permission to delete the
-        Firestore profile.
-      */
       await deleteDoc(
         doc(db, "users", user.uid)
       );
@@ -261,9 +255,13 @@ function DeleteAccount({ navigation }) {
       <SafeAreaView
         style={styles.centerContainer}
       >
-        <Text style={styles.errorIcon}>
-          🔐
-        </Text>
+        <View style={styles.errorIconContainer}>
+          <MaterialIcons
+            name="lock"
+            size={42}
+            color="#DC2626"
+          />
+        </View>
 
         <Text style={styles.errorTitle}>
           Login Required
@@ -279,7 +277,14 @@ function DeleteAccount({ navigation }) {
           onPress={() =>
             navigation.replace("Login")
           }
+          activeOpacity={0.85}
         >
+          <MaterialIcons
+            name="login"
+            size={19}
+            color="#FFFFFF"
+          />
+
           <Text style={styles.loginButtonText}>
             Go to Login
           </Text>
@@ -300,15 +305,19 @@ function DeleteAccount({ navigation }) {
           styles.scrollContent
         }
       >
+        {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             disabled={deleting}
+            activeOpacity={0.8}
           >
-            <Text style={styles.backButtonText}>
-              ‹
-            </Text>
+            <MaterialIcons
+              name="arrow-back"
+              size={23}
+              color="#991B1B"
+            />
           </TouchableOpacity>
 
           <View style={styles.headerTextContainer}>
@@ -317,16 +326,38 @@ function DeleteAccount({ navigation }) {
             </Text>
 
             <Text style={styles.subtitle}>
-              Permanently remove your Ubuntu
-              Connect account.
+              Permanently remove your Ubuntu Connect account.
             </Text>
+          </View>
+
+          <View style={styles.headerIcon}>
+            <MaterialIcons
+              name="delete-outline"
+              size={24}
+              color="#DC2626"
+            />
           </View>
         </View>
 
+        {/* WARNING */}
         <View style={styles.warningCard}>
           <View style={styles.warningIconContainer}>
-            <Text style={styles.warningIcon}>
-              ⚠️
+            <MaterialIcons
+              name="warning"
+              size={32}
+              color="#DC2626"
+            />
+          </View>
+
+          <View style={styles.warningBadge}>
+            <MaterialIcons
+              name="error-outline"
+              size={14}
+              color="#DC2626"
+            />
+
+            <Text style={styles.warningBadgeText}>
+              PERMANENT ACTION
             </Text>
           </View>
 
@@ -335,54 +366,133 @@ function DeleteAccount({ navigation }) {
           </Text>
 
           <Text style={styles.warningText}>
-            After account deletion, you will no
-            longer be able to log in using this
-            Ubuntu Connect account.
+            Deleting your account will permanently
+            remove your Ubuntu Connect profile and
+            sign you out.
           </Text>
         </View>
 
+        {/* ACCOUNT CARD */}
         <View style={styles.accountCard}>
-          <Text style={styles.sectionTitle}>
-            Account being deleted
-          </Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderIcon}>
+              <MaterialIcons
+                name="manage-accounts"
+                size={19}
+                color="#2563EB"
+              />
+            </View>
 
-          <Text style={styles.accountLabel}>
-            Email address
-          </Text>
+            <View>
+              <Text style={styles.sectionTitle}>
+                Account being deleted
+              </Text>
 
-          <Text style={styles.accountValue}>
-            {currentUser.email ||
-              "Email unavailable"}
-          </Text>
+              <Text style={styles.sectionSubtitle}>
+                Confirm this is the correct account.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.accountInfoRow}>
+            <View style={styles.accountIcon}>
+              <MaterialIcons
+                name="email"
+                size={18}
+                color="#64748B"
+              />
+            </View>
+
+            <View style={styles.accountInfoContent}>
+              <Text style={styles.accountLabel}>
+                Email address
+              </Text>
+
+              <Text
+                style={styles.accountValue}
+                numberOfLines={1}
+              >
+                {currentUser.email ||
+                  "Email unavailable"}
+              </Text>
+            </View>
+          </View>
 
           <View style={styles.divider} />
 
-          <Text style={styles.accountLabel}>
-            User ID
-          </Text>
+          <View style={styles.accountInfoRow}>
+            <View style={styles.accountIcon}>
+              <MaterialIcons
+                name="fingerprint"
+                size={18}
+                color="#64748B"
+              />
+            </View>
 
-          <Text
-            style={styles.userId}
-            numberOfLines={1}
-          >
-            {currentUser.uid}
-          </Text>
+            <View style={styles.accountInfoContent}>
+              <Text style={styles.accountLabel}>
+                User ID
+              </Text>
+
+              <Text
+                style={styles.userId}
+                numberOfLines={1}
+              >
+                {currentUser.uid}
+              </Text>
+            </View>
+          </View>
         </View>
 
+        {/* IDENTITY FORM */}
         <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>
-            Confirm your identity
-          </Text>
+          <View style={styles.formHeader}>
+            <View style={styles.formHeaderIcon}>
+              <MaterialIcons
+                name="verified-user"
+                size={20}
+                color="#DC2626"
+              />
+            </View>
 
-          <Text style={styles.instructions}>
-            Enter your current account password.
-          </Text>
+            <View style={styles.formHeaderContent}>
+              <Text style={styles.sectionTitle}>
+                Confirm your identity
+              </Text>
 
+              <Text style={styles.sectionSubtitle}>
+                Security verification is required.
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.instructionBox}>
+            <MaterialIcons
+              name="security"
+              size={18}
+              color="#64748B"
+            />
+
+            <Text style={styles.instructions}>
+              Enter your current password and type
+              DELETE below to confirm this permanent
+              action.
+            </Text>
+          </View>
+
+          {/* PASSWORD */}
           <Text style={styles.label}>
             Current password
           </Text>
 
           <View style={styles.passwordContainer}>
+            <MaterialIcons
+              name="lock-outline"
+              size={20}
+              color="#64748B"
+              style={styles.passwordIcon}
+            />
+
             <TextInput
               placeholder="Enter your password"
               placeholderTextColor="#94A3B8"
@@ -403,15 +513,21 @@ function DeleteAccount({ navigation }) {
                 )
               }
               disabled={deleting}
+              activeOpacity={0.7}
             >
-              <Text
-                style={styles.showPasswordText}
-              >
-                {hidePassword ? "Show" : "Hide"}
-              </Text>
+              <MaterialIcons
+                name={
+                  hidePassword
+                    ? "visibility"
+                    : "visibility-off"
+                }
+                size={20}
+                color="#64748B"
+              />
             </TouchableOpacity>
           </View>
 
+          {/* DELETE CONFIRMATION */}
           <Text style={styles.confirmationLabel}>
             Type{" "}
             <Text style={styles.deleteWord}>
@@ -420,17 +536,27 @@ function DeleteAccount({ navigation }) {
             to confirm
           </Text>
 
-          <TextInput
-            placeholder="Type DELETE"
-            placeholderTextColor="#94A3B8"
-            value={confirmationText}
-            onChangeText={setConfirmationText}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            editable={!deleting}
-            style={styles.confirmationInput}
-          />
+          <View style={styles.confirmationContainer}>
+            <MaterialIcons
+              name="keyboard"
+              size={19}
+              color="#DC2626"
+              style={styles.confirmationIcon}
+            />
 
+            <TextInput
+              placeholder="Type DELETE"
+              placeholderTextColor="#94A3B8"
+              value={confirmationText}
+              onChangeText={setConfirmationText}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              editable={!deleting}
+              style={styles.confirmationInput}
+            />
+          </View>
+
+          {/* DELETE BUTTON */}
           <TouchableOpacity
             style={[
               styles.deleteButton,
@@ -439,6 +565,7 @@ function DeleteAccount({ navigation }) {
             ]}
             onPress={requestAccountDeletion}
             disabled={deleting}
+            activeOpacity={0.85}
           >
             {deleting ? (
               <View style={styles.buttonContent}>
@@ -454,29 +581,50 @@ function DeleteAccount({ navigation }) {
                 </Text>
               </View>
             ) : (
-              <Text
-                style={styles.deleteButtonText}
-              >
-                Permanently Delete Account
-              </Text>
+              <View style={styles.buttonContent}>
+                <MaterialIcons
+                  name="delete"
+                  size={20}
+                  color="#FFFFFF"
+                />
+
+                <Text
+                  style={styles.deleteButtonText}
+                >
+                  Permanently Delete Account
+                </Text>
+              </View>
             )}
           </TouchableOpacity>
 
+          {/* CANCEL */}
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={() => navigation.goBack()}
             disabled={deleting}
+            activeOpacity={0.8}
           >
+            <MaterialIcons
+              name="arrow-back"
+              size={19}
+              color="#16A34A"
+            />
+
             <Text style={styles.cancelButtonText}>
               Keep My Account
             </Text>
           </TouchableOpacity>
         </View>
 
+        {/* HELP CARD */}
         <View style={styles.helpCard}>
-          <Text style={styles.helpIcon}>
-            🌱
-          </Text>
+          <View style={styles.helpIconContainer}>
+            <MaterialIcons
+              name="volunteer-activism"
+              size={23}
+              color="#16A34A"
+            />
+          </View>
 
           <View style={styles.helpContent}>
             <Text style={styles.helpTitle}>
@@ -485,7 +633,7 @@ function DeleteAccount({ navigation }) {
 
             <Text style={styles.helpText}>
               You can return to your profile without
-              making any changes by pressing Keep My
+              making any changes by selecting Keep My
               Account.
             </Text>
           </View>
@@ -509,6 +657,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  /* LOGIN REQUIRED */
+
   centerContainer: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -517,29 +667,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
   },
 
+  errorIconContainer: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  errorTitle: {
+    color: "#1E293B",
+    fontSize: 21,
+    fontWeight: "800",
+    marginTop: 17,
+  },
+
+  errorText: {
+    color: "#64748B",
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+    marginTop: 8,
+  },
+
+  loginButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#16A34A",
+    borderRadius: 14,
+    paddingHorizontal: 22,
+    minHeight: 50,
+    marginTop: 20,
+  },
+
+  loginButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+    marginLeft: 7,
+  },
+
+  /* HEADER */
+
   header: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 15,
-    marginBottom: 22,
+    marginBottom: 20,
   },
 
   backButton: {
     width: 46,
     height: 46,
-    borderRadius: 23,
+    borderRadius: 15,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#FECACA",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 13,
-  },
-
-  backButtonText: {
-    color: "#991B1B",
-    fontSize: 32,
-    lineHeight: 34,
+    marginRight: 12,
   },
 
   headerTextContainer: {
@@ -554,9 +744,24 @@ const styles = StyleSheet.create({
 
   subtitle: {
     color: "#64748B",
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 17,
     marginTop: 3,
   },
+
+  headerIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 8,
+  },
+
+  /* WARNING */
 
   warningCard: {
     backgroundColor: "#FEF2F2",
@@ -569,17 +774,35 @@ const styles = StyleSheet.create({
   },
 
   warningIconContainer: {
-    width: 65,
-    height: 65,
-    borderRadius: 33,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: "#FEE2E2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 13,
+    marginBottom: 12,
   },
 
-  warningIcon: {
-    fontSize: 31,
+  warningBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 20,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    marginBottom: 10,
+  },
+
+  warningBadgeText: {
+    color: "#DC2626",
+    fontSize: 9,
+    fontWeight: "900",
+    marginLeft: 4,
+    letterSpacing: 0.5,
   },
 
   warningTitle: {
@@ -590,45 +813,87 @@ const styles = StyleSheet.create({
 
   warningText: {
     color: "#B91C1C",
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 19,
     textAlign: "center",
     marginTop: 7,
   },
+
+  /* ACCOUNT CARD */
 
   accountCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    borderRadius: 19,
+    borderRadius: 20,
     padding: 18,
     marginBottom: 16,
   },
 
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+
+  cardHeaderIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
+  },
+
   sectionTitle: {
     color: "#1E293B",
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
-    marginBottom: 17,
+  },
+
+  sectionSubtitle: {
+    color: "#94A3B8",
+    fontSize: 10,
+    marginTop: 3,
+  },
+
+  accountInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  accountIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
+  },
+
+  accountInfoContent: {
+    flex: 1,
   },
 
   accountLabel: {
     color: "#64748B",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
   },
 
   accountValue: {
     color: "#1E293B",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
-    marginTop: 5,
+    marginTop: 3,
   },
 
   userId: {
     color: "#64748B",
-    fontSize: 11,
-    marginTop: 5,
+    fontSize: 10,
+    marginTop: 3,
   },
 
   divider: {
@@ -636,6 +901,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#E2E8F0",
     marginVertical: 14,
   },
+
+  /* FORM */
 
   formCard: {
     backgroundColor: "#FFFFFF",
@@ -646,20 +913,51 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  instructions: {
-    color: "#64748B",
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: -8,
+  formHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 17,
+  },
+
+  formHeaderIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#FEF2F2",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
+  },
+
+  formHeaderContent: {
+    flex: 1,
+  },
+
+  instructionBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 13,
+    padding: 12,
     marginBottom: 18,
+  },
+
+  instructions: {
+    flex: 1,
+    color: "#64748B",
+    fontSize: 11,
+    lineHeight: 17,
+    marginLeft: 8,
   },
 
   label: {
     color: "#1E293B",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     marginBottom: 8,
   },
+
+  /* PASSWORD */
 
   passwordContainer: {
     minHeight: 56,
@@ -672,29 +970,30 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
+  passwordIcon: {
+    marginLeft: 15,
+  },
+
   passwordInput: {
     flex: 1,
     minHeight: 56,
     color: "#1E293B",
-    fontSize: 15,
-    paddingHorizontal: 16,
+    fontSize: 14,
+    paddingHorizontal: 11,
   },
 
   showPasswordButton: {
-    minHeight: 56,
+    width: 48,
+    height: 56,
     justifyContent: "center",
-    paddingHorizontal: 15,
+    alignItems: "center",
   },
 
-  showPasswordText: {
-    color: "#2563EB",
-    fontSize: 12,
-    fontWeight: "700",
-  },
+  /* CONFIRMATION */
 
   confirmationLabel: {
     color: "#1E293B",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     marginBottom: 8,
   },
@@ -704,18 +1003,31 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  confirmationInput: {
+  confirmationContainer: {
     minHeight: 56,
     backgroundColor: "#FFF7F7",
     borderWidth: 1,
     borderColor: "#FCA5A5",
     borderRadius: 15,
-    color: "#991B1B",
-    fontSize: 15,
-    fontWeight: "700",
-    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
   },
+
+  confirmationIcon: {
+    marginLeft: 15,
+  },
+
+  confirmationInput: {
+    flex: 1,
+    minHeight: 56,
+    color: "#991B1B",
+    fontSize: 15,
+    fontWeight: "800",
+    paddingHorizontal: 11,
+  },
+
+  /* BUTTONS */
 
   deleteButton: {
     minHeight: 56,
@@ -723,6 +1035,14 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#DC2626",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    elevation: 3,
   },
 
   disabledButton: {
@@ -748,6 +1068,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#BBF7D0",
     borderRadius: 15,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     marginTop: 12,
@@ -755,21 +1076,29 @@ const styles = StyleSheet.create({
 
   cancelButtonText: {
     color: "#16A34A",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "800",
+    marginLeft: 6,
   },
+
+  /* HELP */
 
   helpCard: {
     flexDirection: "row",
     backgroundColor: "#F0FDF4",
     borderWidth: 1,
     borderColor: "#BBF7D0",
-    borderRadius: 17,
+    borderRadius: 18,
     padding: 16,
   },
 
-  helpIcon: {
-    fontSize: 23,
+  helpIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "#DCFCE7",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
 
@@ -785,39 +1114,9 @@ const styles = StyleSheet.create({
 
   helpText: {
     color: "#15803D",
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     marginTop: 4,
   },
-
-  errorIcon: {
-    fontSize: 55,
-  },
-
-  errorTitle: {
-    color: "#1E293B",
-    fontSize: 21,
-    fontWeight: "800",
-    marginTop: 15,
-  },
-
-  errorText: {
-    color: "#64748B",
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: 8,
-  },
-
-  loginButton: {
-    backgroundColor: "#16A34A",
-    borderRadius: 14,
-    paddingHorizontal: 22,
-    paddingVertical: 13,
-    marginTop: 20,
-  },
-
-  loginButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "800",
-  },
+  
 });

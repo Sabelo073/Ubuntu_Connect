@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import {
   collection,
   query,
@@ -158,25 +158,22 @@ export default function MainTabs() {
   let iconName;
 
   if (route.name === "Home") {
-    iconName = focused ? "home" : "home-outline";
-  } else if (route.name === "Donate") {
-    iconName = focused ? "gift" : "gift-outline";
-  } else if (route.name === "Messages") {
-    iconName = focused ? "chatbubble" : "chatbubble-outline";
-  } else if (route.name === "Notifications") {
-    iconName = focused
-      ? "notifications"
-      : "notifications-outline";
-  } else if (route.name === "Profile") {
-    iconName = focused ? "person" : "person-outline";
-  }
-
+  iconName = "home";
+} else if (route.name === "Donate") {
+  iconName = "card-giftcard";
+} else if (route.name === "Messages") {
+  iconName = "chat";
+} else if (route.name === "Notifications") {
+  iconName = "notifications";
+} else if (route.name === "Profile") {
+  iconName = "person";
+}
   return (
-    <Ionicons
-      name={iconName}
-      size={focused ? 26 : 22}
-      color={color}
-    />
+    <MaterialIcons
+  name={iconName}
+  size={focused ? 26 : 22}
+  color={color}
+/>
   );
 },
       })}

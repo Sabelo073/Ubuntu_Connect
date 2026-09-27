@@ -8,17 +8,19 @@ import {
   StyleSheet,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
-import {
-  SafeAreaView,
-} from "react-native-safe-area-context";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import * as ImagePicker from "expo-image-picker";
 
 import { addDoc, collection } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
 
-const Donate = () => {
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
+const Donate = ({ navigation }) => {
   const [itemName, setItemName] = useState("");
   const [category, setCategory] = useState("Clothes");
   const [condition, setCondition] = useState("Good");
@@ -32,14 +34,54 @@ const Donate = () => {
   const [loading, setLoading] = useState(false);
 
   const categories = [
-    "Food",
-    "Clothes",
-    "Furniture",
-    "Books",
-    "Electronics",
-    "School Supplies",
-    "Toys",
-    "Blankets",
+    {
+      name: "Food",
+      icon: "restaurant",
+      color: "#F97316",
+      background: "#FFF7ED",
+    },
+    {
+      name: "Clothes",
+      icon: "checkroom",
+      color: "#2563EB",
+      background: "#EFF6FF",
+    },
+    {
+      name: "Furniture",
+      icon: "chair",
+      color: "#7C3AED",
+      background: "#F5F3FF",
+    },
+    {
+      name: "Books",
+      icon: "menu-book",
+      color: "#22C55E",
+      background: "#F0FDF4",
+    },
+    {
+      name: "Electronics",
+      icon: "devices",
+      color: "#2563EB",
+      background: "#EFF6FF",
+    },
+    {
+      name: "School Supplies",
+      icon: "school",
+      color: "#F97316",
+      background: "#FFF7ED",
+    },
+    {
+      name: "Toys",
+      icon: "toys",
+      color: "#7C3AED",
+      background: "#F5F3FF",
+    },
+    {
+      name: "Blankets",
+      icon: "bed",
+      color: "#22C55E",
+      background: "#F0FDF4",
+    },
   ];
 
   const pickImage = async () => {
@@ -54,13 +96,15 @@ const Donate = () => {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.2,
-      base64: true,
-    });
+    const result =
+      await ImagePicker.launchImageLibraryAsync({
+        mediaTypes:
+          ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.2,
+        base64: true,
+      });
 
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
@@ -69,15 +113,26 @@ const Donate = () => {
   };
 
   const handleSubmitDonation = async () => {
-    if (!itemName || !category || !description || !address) {
-      Alert.alert("Missing Information", "Please fill in all required fields.");
+    if (
+      !itemName ||
+      !category ||
+      !description ||
+      !address
+    ) {
+      Alert.alert(
+        "Missing Information",
+        "Please fill in all required fields."
+      );
       return;
     }
 
     const user = auth.currentUser;
 
     if (!user) {
-      Alert.alert("Not Logged In", "Please login before submitting a donation.");
+      Alert.alert(
+        "Not Logged In",
+        "Please login before submitting a donation."
+      );
       return;
     }
 
@@ -97,7 +152,10 @@ const Donate = () => {
         createdAt: new Date(),
       });
 
-      Alert.alert("Success", "Your donation has been submitted successfully.");
+      Alert.alert(
+        "Donation Submitted",
+        "Your donation has been submitted successfully."
+      );
 
       setItemName("");
       setCategory("Clothes");
@@ -108,7 +166,10 @@ const Donate = () => {
       setImageUri(null);
       setImageBase64("");
     } catch (error) {
-      Alert.alert("Donation Error", error.message);
+      Alert.alert(
+        "Donation Error",
+        error.message
+      );
     } finally {
       setLoading(false);
     }
@@ -116,151 +177,542 @@ const Donate = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>Donate an Item</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
 
-        {/* Upload Image */}
-        <TouchableOpacity style={styles.imageBox} onPress={pickImage}>
-          {imageUri ? (
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.previewImage}
+        {/* =====================================
+            HEADER
+        ===================================== */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialIcons
+              name="arrow-back"
+              size={23}
+              color="#1E293B"
             />
+          </TouchableOpacity>
+
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.heading}>
+              Donate an Item
+            </Text>
+
+            <Text style={styles.subtitle}>
+              Give something useful a second life.
+            </Text>
+          </View>
+
+          <View style={styles.headerIcon}>
+            <MaterialIcons
+              name="card-giftcard"
+              size={24}
+              color="#2563EB"
+            />
+          </View>
+        </View>
+
+        {/* =====================================
+            INTRO CARD
+        ===================================== */}
+        <View style={styles.introCard}>
+          <View style={styles.introIcon}>
+            <MaterialIcons
+              name="volunteer-activism"
+              size={25}
+              color="#22C55E"
+            />
+          </View>
+
+          <View style={styles.introContent}>
+            <Text style={styles.introTitle}>
+              Make someone's day
+            </Text>
+
+            <Text style={styles.introText}>
+              Your unused items could make a real
+              difference to someone in your community.
+            </Text>
+          </View>
+        </View>
+
+        {/* =====================================
+            PHOTO
+        ===================================== */}
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>
+              Item Photo
+            </Text>
+
+            <Text style={styles.sectionSubtitle}>
+              Help others see what you're offering
+            </Text>
+          </View>
+
+          <Text style={styles.optional}>
+            Optional
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.imageBox,
+            imageUri && styles.imageBoxWithImage,
+          ]}
+          onPress={pickImage}
+          activeOpacity={0.8}
+        >
+          {imageUri ? (
+            <>
+              <Image
+                source={{ uri: imageUri }}
+                style={styles.previewImage}
+              />
+
+              <View style={styles.changeImageOverlay}>
+                <MaterialIcons
+                  name="photo-camera"
+                  size={18}
+                  color="#FFFFFF"
+                />
+
+                <Text style={styles.changeImageText}>
+                  Change Photo
+                </Text>
+              </View>
+            </>
           ) : (
             <>
-              <Text style={styles.camera}>📷</Text>
-              <Text style={styles.imageText}>Upload Item Photo</Text>
+              <View style={styles.uploadIcon}>
+                <MaterialIcons
+                  name="add-a-photo"
+                  size={30}
+                  color="#2563EB"
+                />
+              </View>
+
+              <Text style={styles.imageText}>
+                Add a photo
+              </Text>
+
               <Text style={styles.smallText}>
-                Tap to choose from gallery
+                Tap to choose an image from your gallery
               </Text>
             </>
           )}
         </TouchableOpacity>
 
-        {/* Item Name */}
-        <Text style={styles.label}>Item Name</Text>
-        <TextInput
-          placeholder="e.g. Winter Jacket"
-          placeholderTextColor="#94A3B8"
-          value={itemName}
-          onChangeText={setItemName}
-          style={styles.input}
-        />
+        {/* =====================================
+            ITEM DETAILS
+        ===================================== */}
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>
+              Item Details
+            </Text>
 
-        {/* Category */}
-        <Text style={styles.label}>Category</Text>
+            <Text style={styles.sectionSubtitle}>
+              Tell the community about your donation
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.label}>
+          Item Name
+        </Text>
+
+        <View style={styles.inputWrapper}>
+          <MaterialIcons
+            name="inventory-2"
+            size={20}
+            color="#64748B"
+          />
+
+          <TextInput
+            placeholder="e.g. Winter Jacket"
+            placeholderTextColor="#94A3B8"
+            value={itemName}
+            onChangeText={setItemName}
+            style={styles.input}
+          />
+        </View>
+
+        {/* =====================================
+            CATEGORY
+        ===================================== */}
+        <Text style={styles.label}>
+          Category
+        </Text>
 
         <View style={styles.categoryContainer}>
-          {categories.map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[
-                styles.categoryButton,
-                category === item && styles.activeCategory,
-              ]}
-              onPress={() => setCategory(item)}
-            >
-              <Text
+          {categories.map((item) => {
+            const isSelected =
+              category === item.name;
+
+            return (
+              <TouchableOpacity
+                key={item.name}
                 style={[
-                  styles.categoryText,
-                  category === item && styles.activeCategoryText,
+                  styles.categoryButton,
+                  isSelected &&
+                    styles.activeCategory,
                 ]}
+                onPress={() =>
+                  setCategory(item.name)
+                }
+                activeOpacity={0.8}
               >
-                {item}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <View
+                  style={[
+                    styles.categoryIcon,
+                    {
+                      backgroundColor: isSelected
+                        ? "rgba(255,255,255,0.18)"
+                        : item.background,
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={item.icon}
+                    size={17}
+                    color={
+                      isSelected
+                        ? "#FFFFFF"
+                        : item.color
+                    }
+                  />
+                </View>
+
+                <Text
+                  style={[
+                    styles.categoryText,
+                    isSelected &&
+                      styles.activeCategoryText,
+                  ]}
+                >
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Condition */}
-        <Text style={styles.label}>Condition</Text>
+        {/* =====================================
+            CONDITION
+        ===================================== */}
+        <Text style={styles.label}>
+          Condition
+        </Text>
 
         <View style={styles.choiceRow}>
-          {["New", "Good", "Fair"].map((item) => (
-            <TouchableOpacity
-              key={item}
-              style={[
-                styles.choiceButton,
-                condition === item && styles.selected,
-              ]}
-              onPress={() => setCondition(item)}
-            >
-              <Text
+          {[
+            {
+              name: "New",
+              icon: "auto-awesome",
+            },
+            {
+              name: "Good",
+              icon: "verified",
+            },
+            {
+              name: "Fair",
+              icon: "recycling",
+            },
+          ].map((item) => {
+            const isSelected =
+              condition === item.name;
+
+            return (
+              <TouchableOpacity
+                key={item.name}
                 style={[
-                  styles.choiceText,
-                  condition === item && styles.selectedText,
+                  styles.choiceButton,
+                  isSelected &&
+                    styles.selected,
                 ]}
+                onPress={() =>
+                  setCondition(item.name)
+                }
               >
-                {item}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <MaterialIcons
+                  name={item.icon}
+                  size={18}
+                  color={
+                    isSelected
+                      ? "#FFFFFF"
+                      : "#64748B"
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.choiceText,
+                    isSelected &&
+                      styles.selectedText,
+                  ]}
+                >
+                  {item.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Description */}
-        <Text style={styles.label}>Description</Text>
+        {/* =====================================
+            DESCRIPTION
+        ===================================== */}
+        <Text style={styles.label}>
+          Description
+        </Text>
 
-        <TextInput
-          multiline
-          numberOfLines={5}
-          placeholder="Tell us about the item..."
-          placeholderTextColor="#94A3B8"
-          value={description}
-          onChangeText={setDescription}
-          style={[styles.input, styles.textarea]}
-        />
+        <View
+          style={[
+            styles.inputWrapper,
+            styles.textareaWrapper,
+          ]}
+        >
+          <MaterialIcons
+            name="description"
+            size={20}
+            color="#64748B"
+            style={styles.textareaIcon}
+          />
 
-        {/* Delivery Method */}
-        <Text style={styles.label}>Delivery Method</Text>
-
-        <View style={styles.choiceRow}>
-          {["Pickup", "Drop-off"].map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={[
-                styles.choiceButton,
-                deliveryMethod === option && styles.selected,
-              ]}
-              onPress={() => setDeliveryMethod(option)}
-            >
-              <Text
-                style={[
-                  styles.choiceText,
-                  deliveryMethod === option && styles.selectedText,
-                ]}
-              >
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <TextInput
+            multiline
+            numberOfLines={5}
+            placeholder="Tell us about the item, its size, colour, features or anything else that may be useful..."
+            placeholderTextColor="#94A3B8"
+            value={description}
+            onChangeText={setDescription}
+            style={[
+              styles.input,
+              styles.textarea,
+            ]}
+            textAlignVertical="top"
+          />
         </View>
 
-        {/* Address */}
-        <Text style={styles.label}>Address</Text>
+        {/* =====================================
+            DELIVERY
+        ===================================== */}
+        <Text style={styles.label}>
+          Delivery Method
+        </Text>
 
-        <TextInput
-          placeholder="Collection or drop-off address"
-          placeholderTextColor="#94A3B8"
-          value={address}
-          onChangeText={setAddress}
-          style={styles.input}
-        />
+        <View style={styles.deliveryContainer}>
+          <TouchableOpacity
+            style={[
+              styles.deliveryCard,
+              deliveryMethod === "Pickup" &&
+                styles.deliveryCardSelected,
+            ]}
+            onPress={() =>
+              setDeliveryMethod("Pickup")
+            }
+          >
+            <View
+              style={[
+                styles.deliveryIcon,
+                deliveryMethod === "Pickup" &&
+                  styles.deliveryIconSelected,
+              ]}
+            >
+              <MaterialIcons
+                name="local-shipping"
+                size={23}
+                color={
+                  deliveryMethod === "Pickup"
+                    ? "#FFFFFF"
+                    : "#2563EB"
+                }
+              />
+            </View>
 
-        {/* Submit Button */}
+            <View style={styles.deliveryText}>
+              <Text
+                style={[
+                  styles.deliveryTitle,
+                  deliveryMethod === "Pickup" &&
+                    styles.deliveryTitleSelected,
+                ]}
+              >
+                Pickup
+              </Text>
+
+              <Text style={styles.deliveryDescription}>
+                Recipient collects the item
+              </Text>
+            </View>
+
+            {deliveryMethod === "Pickup" && (
+              <MaterialIcons
+                name="check-circle"
+                size={21}
+                color="#22C55E"
+              />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.deliveryCard,
+              deliveryMethod === "Drop-off" &&
+                styles.deliveryCardSelected,
+            ]}
+            onPress={() =>
+              setDeliveryMethod("Drop-off")
+            }
+          >
+            <View
+              style={[
+                styles.deliveryIcon,
+                deliveryMethod === "Drop-off" &&
+                  styles.deliveryIconSelected,
+              ]}
+            >
+              <MaterialIcons
+                name="store"
+                size={23}
+                color={
+                  deliveryMethod === "Drop-off"
+                    ? "#FFFFFF"
+                    : "#7C3AED"
+                }
+              />
+            </View>
+
+            <View style={styles.deliveryText}>
+              <Text
+                style={[
+                  styles.deliveryTitle,
+                  deliveryMethod === "Drop-off" &&
+                    styles.deliveryTitleSelected,
+                ]}
+              >
+                Drop-off
+              </Text>
+
+              <Text style={styles.deliveryDescription}>
+                You deliver the item
+              </Text>
+            </View>
+
+            {deliveryMethod === "Drop-off" && (
+              <MaterialIcons
+                name="check-circle"
+                size={21}
+                color="#22C55E"
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* =====================================
+            ADDRESS
+        ===================================== */}
+        <Text style={styles.label}>
+          Address
+        </Text>
+
+        <View style={styles.inputWrapper}>
+          <MaterialIcons
+            name="location-on"
+            size={20}
+            color="#64748B"
+          />
+
+          <TextInput
+            placeholder="Collection or drop-off address"
+            placeholderTextColor="#94A3B8"
+            value={address}
+            onChangeText={setAddress}
+            style={styles.input}
+          />
+        </View>
+
+        {/* =====================================
+            INFO
+        ===================================== */}
+        <View style={styles.infoCard}>
+          <View style={styles.infoIcon}>
+            <MaterialIcons
+              name="info-outline"
+              size={21}
+              color="#2563EB"
+            />
+          </View>
+
+          <View style={styles.infoContent}>
+            <Text style={styles.infoTitle}>
+              A quick reminder
+            </Text>
+
+            <Text style={styles.infoText}>
+              Please make sure the item is safe,
+              accurately described and ready for the
+              selected delivery method.
+            </Text>
+          </View>
+        </View>
+
+        {/* =====================================
+            SUBMIT
+        ===================================== */}
         <TouchableOpacity
           style={[
             styles.submitButton,
-            loading && styles.disabledButton,
+            loading &&
+              styles.disabledButton,
           ]}
           onPress={handleSubmitDonation}
           disabled={loading}
+          activeOpacity={0.85}
         >
-          <Text style={styles.submitText}>
-            {loading ? "Submitting..." : "Submit Donation"}
-          </Text>
+          {loading ? (
+            <>
+              <ActivityIndicator
+                size="small"
+                color="#FFFFFF"
+              />
+
+              <Text style={styles.submitText}>
+                Submitting Donation...
+              </Text>
+            </>
+          ) : (
+            <>
+              <MaterialIcons
+                name="volunteer-activism"
+                size={21}
+                color="#FFFFFF"
+              />
+
+              <Text style={styles.submitText}>
+                Submit Donation
+              </Text>
+
+              <MaterialIcons
+                name="arrow-forward"
+                size={19}
+                color="#FFFFFF"
+              />
+            </>
+          )}
         </TouchableOpacity>
 
-        <View style={{ height: 100 }} />
+        <Text style={styles.bottomText}>
+          Your donation will be reviewed before
+          appearing to other users.
+        </Text>
+
+        <View style={{ height: 60 }} />
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -272,156 +724,471 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
+  },
+
+  scrollContent: {
     paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+
+  /* =====================================
+     HEADER
+  ===================================== */
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 15,
+    marginBottom: 20,
+  },
+
+  backButton: {
+    width: 45,
+    height: 45,
+    borderRadius: 15,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginRight: 12,
+  },
+
+  headerTextContainer: {
+    flex: 1,
   },
 
   heading: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1E293B",
-    marginTop: 20,
-    marginBottom: 25,
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#0F172A",
   },
 
-  imageBox: {
+  subtitle: {
+    color: "#64748B",
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  headerIcon: {
+    width: 45,
+    height: 45,
+    borderRadius: 15,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  /* =====================================
+     INTRO
+  ===================================== */
+
+  introCard: {
     backgroundColor: "#FFFFFF",
-    height: 180,
     borderRadius: 20,
-    borderWidth: 2,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 26,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+
+  introIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
+    backgroundColor: "#F0FDF4",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  introContent: {
+    flex: 1,
+  },
+
+  introTitle: {
+    color: "#1E293B",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  introText: {
+    color: "#64748B",
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+
+  /* =====================================
+     SECTIONS
+  ===================================== */
+
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 13,
+  },
+
+  sectionTitle: {
+    color: "#1E293B",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+
+  sectionSubtitle: {
+    color: "#94A3B8",
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  optional: {
+    color: "#94A3B8",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+
+  /* =====================================
+     IMAGE
+  ===================================== */
+
+  imageBox: {
+    height: 190,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 21,
+    borderWidth: 1.5,
     borderStyle: "dashed",
     borderColor: "#CBD5E1",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 25,
+    marginBottom: 27,
     overflow: "hidden",
+  },
+
+  imageBoxWithImage: {
+    borderStyle: "solid",
+    borderColor: "#E2E8F0",
+  },
+
+  uploadIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  imageText: {
+    color: "#334155",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  smallText: {
+    color: "#94A3B8",
+    fontSize: 11,
+    marginTop: 5,
   },
 
   previewImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 18,
   },
 
-  camera: {
-    fontSize: 40,
-    marginBottom: 10,
+  changeImageOverlay: {
+    position: "absolute",
+    bottom: 12,
+    alignSelf: "center",
+    backgroundColor: "rgba(15,23,42,0.78)",
+    borderRadius: 13,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
-  imageText: {
-    color: "#64748B",
-    fontSize: 16,
-    fontWeight: "600",
+  changeImageText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800",
+    marginLeft: 6,
   },
 
-  smallText: {
-    color: "#94A3B8",
-    fontSize: 12,
-    marginTop: 6,
-  },
+  /* =====================================
+     INPUTS
+  ===================================== */
 
   label: {
-    fontSize: 15,
-    fontWeight: "600",
     color: "#334155",
+    fontSize: 13,
+    fontWeight: "700",
     marginBottom: 8,
-    marginTop: 10,
   },
 
-  input: {
+  inputWrapper: {
+    minHeight: 54,
     backgroundColor: "#FFFFFF",
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    paddingHorizontal: 16,
-    height: 55,
-    justifyContent: "center",
-    marginBottom: 15,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 17,
+  },
+
+  input: {
+    flex: 1,
     color: "#1E293B",
+    fontSize: 14,
+    paddingHorizontal: 10,
+    minHeight: 52,
+  },
+
+  textareaWrapper: {
+    minHeight: 125,
+    alignItems: "flex-start",
+    paddingTop: 14,
+  },
+
+  textareaIcon: {
+    marginTop: 2,
   },
 
   textarea: {
-    height: 120,
+    minHeight: 105,
     textAlignVertical: "top",
-    paddingTop: 16,
+    paddingTop: 0,
   },
+
+  /* =====================================
+     CATEGORY
+  ===================================== */
 
   categoryContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: 15,
+    marginBottom: 13,
   },
 
   categoryButton: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginRight: 8,
-    marginBottom: 10,
+    borderColor: "#E2E8F0",
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginRight: 7,
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   activeCategory: {
     backgroundColor: "#7C3AED",
-    borderColor: "#2563EB",
+    borderColor: "#7C3AED",
+  },
+
+  categoryIcon: {
+    width: 27,
+    height: 27,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 6,
   },
 
   categoryText: {
     color: "#475569",
-    fontWeight: "600",
-    fontSize: 13,
+    fontWeight: "700",
+    fontSize: 11,
   },
 
   activeCategoryText: {
     color: "#FFFFFF",
   },
 
+  /* =====================================
+     CONDITION
+  ===================================== */
+
   choiceRow: {
     flexDirection: "row",
-    marginBottom: 15,
+    marginBottom: 17,
   },
 
   choiceButton: {
     flex: 1,
+    minHeight: 48,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#CBD5E1",
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 13,
+    justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
+    flexDirection: "row",
+    marginRight: 8,
   },
 
   selected: {
     backgroundColor: "#7C3AED",
-    borderColor: "#22C55E",
+    borderColor: "#7C3AED",
   },
 
   choiceText: {
     color: "#475569",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 12,
+    marginLeft: 5,
   },
 
   selectedText: {
     color: "#FFFFFF",
   },
 
+  /* =====================================
+     DELIVERY
+  ===================================== */
+
+  deliveryContainer: {
+    marginBottom: 3,
+  },
+
+  deliveryCard: {
+    backgroundColor: "#FFFFFF",
+    minHeight: 72,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  deliveryCardSelected: {
+    borderColor: "#22C55E",
+    backgroundColor: "#F0FDF4",
+  },
+
+  deliveryIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 13,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
+  },
+
+  deliveryIconSelected: {
+    backgroundColor: "#22C55E",
+  },
+
+  deliveryText: {
+    flex: 1,
+  },
+
+  deliveryTitle: {
+    color: "#1E293B",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  deliveryTitleSelected: {
+    color: "#166534",
+  },
+
+  deliveryDescription: {
+    color: "#94A3B8",
+    fontSize: 10,
+    marginTop: 3,
+  },
+
+  /* =====================================
+     INFO
+  ===================================== */
+
+  infoCard: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 17,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 6,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+  },
+
+  infoIcon: {
+    width: 35,
+    height: 35,
+    borderRadius: 11,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+
+  infoContent: {
+    flex: 1,
+  },
+
+  infoTitle: {
+    color: "#1E40AF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  infoText: {
+    color: "#475569",
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+
+  /* =====================================
+     SUBMIT
+  ===================================== */
+
   submitButton: {
     backgroundColor: "#2563EB",
-    paddingVertical: 18,
+    minHeight: 55,
     borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
+    shadowColor: "#2563EB",
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 5,
   },
 
   disabledButton: {
-    opacity: 0.7,
+    opacity: 0.65,
   },
 
   submitText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "800",
+    marginHorizontal: 9,
+  },
+
+  bottomText: {
+    color: "#94A3B8",
+    fontSize: 10,
+    textAlign: "center",
+    lineHeight: 15,
+    marginTop: 10,
   },
 });

@@ -14,6 +14,8 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
 import {
   addDoc,
   collection,
@@ -49,6 +51,9 @@ function CreateCampaign({ navigation }) {
   const [creating, setCreating] =
     useState(false);
 
+  /*
+    Displays a message on Web, Android, and iOS.
+  */
   const showMessage = (title, message) => {
     if (
       Platform.OS === "web" &&
@@ -60,6 +65,9 @@ function CreateCampaign({ navigation }) {
     }
   };
 
+  /*
+    Checks whether the logged-in user is an admin.
+  */
   useEffect(() => {
     const checkAdminAccess = async () => {
       const currentUser = auth.currentUser;
@@ -337,8 +345,16 @@ function CreateCampaign({ navigation }) {
   if (checkingAdmin) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
+        <View style={styles.loadingIconContainer}>
+          <MaterialIcons
+            name="campaign"
+            size={32}
+            color="#2563EB"
+          />
+        </View>
+
         <ActivityIndicator
-          size="large"
+          size="small"
           color="#2563EB"
         />
 
@@ -359,82 +375,196 @@ function CreateCampaign({ navigation }) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={styles.heading}>
-          Create Campaign
-        </Text>
 
-        <Text style={styles.subtitle}>
-          Create a community campaign that Ubuntu
-          Connect users can support.
-        </Text>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            disabled={creating}
+          >
+            <MaterialIcons
+              name="arrow-back"
+              size={22}
+              color="#1E293B"
+            />
+          </TouchableOpacity>
 
+          <View style={styles.headerIcon}>
+            <MaterialIcons
+              name="campaign"
+              size={25}
+              color="#FFFFFF"
+            />
+          </View>
+        </View>
+
+        <View style={styles.headingContainer}>
+          <Text style={styles.heading}>
+            Create Campaign
+          </Text>
+
+          <Text style={styles.subtitle}>
+            Create a community campaign that Ubuntu
+            Connect users can support.
+          </Text>
+        </View>
+
+        {/* BASIC INFORMATION */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionIcon}>
+            <MaterialIcons
+              name="edit-note"
+              size={20}
+              color="#2563EB"
+            />
+          </View>
+
+          <View>
+            <Text style={styles.sectionTitle}>
+              Campaign Information
+            </Text>
+
+            <Text style={styles.sectionSubtitle}>
+              Tell the community what this campaign is about.
+            </Text>
+          </View>
+        </View>
+
+        {/* CAMPAIGN TITLE */}
         <Text style={styles.label}>
           Campaign title
         </Text>
 
-        <TextInput
-          placeholder="Example: Winter Warmth Drive"
-          placeholderTextColor="#94A3B8"
-          value={title}
-          onChangeText={setTitle}
-          style={styles.input}
-          maxLength={100}
-        />
+        <View style={styles.inputContainer}>
+          <MaterialIcons
+            name="campaign"
+            size={20}
+            color="#94A3B8"
+            style={styles.inputIcon}
+          />
 
+          <TextInput
+            placeholder="Example: Winter Warmth Drive"
+            placeholderTextColor="#94A3B8"
+            value={title}
+            onChangeText={setTitle}
+            style={styles.input}
+            maxLength={100}
+          />
+        </View>
+
+        {/* ORGANIZATION */}
         <Text style={styles.label}>
           Organization
         </Text>
 
-        <TextInput
-          placeholder="Example: Ubuntu Shelter"
-          placeholderTextColor="#94A3B8"
-          value={organization}
-          onChangeText={setOrganization}
-          style={styles.input}
-          maxLength={100}
-        />
+        <View style={styles.inputContainer}>
+          <MaterialIcons
+            name="business"
+            size={20}
+            color="#94A3B8"
+            style={styles.inputIcon}
+          />
 
-        <Text style={styles.label}>
-          Description
-        </Text>
+          <TextInput
+            placeholder="Example: Ubuntu Shelter"
+            placeholderTextColor="#94A3B8"
+            value={organization}
+            onChangeText={setOrganization}
+            style={styles.input}
+            maxLength={100}
+          />
+        </View>
 
-        <TextInput
-          placeholder="Explain the campaign and why support is needed..."
-          placeholderTextColor="#94A3B8"
-          value={description}
-          onChangeText={setDescription}
+        {/* DESCRIPTION */}
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>
+            Description
+          </Text>
+
+          <Text style={styles.characterCount}>
+            {description.length}/500
+          </Text>
+        </View>
+
+        <View
           style={[
-            styles.input,
-            styles.descriptionInput,
+            styles.inputContainer,
+            styles.descriptionContainer,
           ]}
-          multiline
-          maxLength={500}
-          textAlignVertical="top"
-        />
+        >
+          <MaterialIcons
+            name="description"
+            size={20}
+            color="#94A3B8"
+            style={styles.descriptionIcon}
+          />
 
-        <Text style={styles.characterCount}>
-          {description.length}/500
-        </Text>
+          <TextInput
+            placeholder="Explain the campaign and why support is needed..."
+            placeholderTextColor="#94A3B8"
+            value={description}
+            onChangeText={setDescription}
+            style={[
+              styles.input,
+              styles.descriptionInput,
+            ]}
+            multiline
+            maxLength={500}
+            textAlignVertical="top"
+          />
+        </View>
 
+        {/* LOCATION */}
         <Text style={styles.label}>
           Location
         </Text>
 
-        <TextInput
-          placeholder="Example: Johannesburg"
-          placeholderTextColor="#94A3B8"
-          value={location}
-          onChangeText={setLocation}
-          style={styles.input}
-          maxLength={150}
-        />
+        <View style={styles.inputContainer}>
+          <MaterialIcons
+            name="location-on"
+            size={20}
+            color="#94A3B8"
+            style={styles.inputIcon}
+          />
 
-        <Text style={styles.label}>
-          Campaign type
-        </Text>
+          <TextInput
+            placeholder="Example: Johannesburg"
+            placeholderTextColor="#94A3B8"
+            value={location}
+            onChangeText={setLocation}
+            style={styles.input}
+            maxLength={150}
+          />
+        </View>
+
+        {/* CAMPAIGN TYPE */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionIconGreen}>
+            <MaterialIcons
+              name="category"
+              size={20}
+              color="#22C55E"
+            />
+          </View>
+
+          <View>
+            <Text style={styles.sectionTitle}>
+              Campaign Type
+            </Text>
+
+            <Text style={styles.sectionSubtitle}>
+              Choose what the campaign is collecting.
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.typeRow}>
+
+          {/* ITEMS */}
           <TouchableOpacity
+            activeOpacity={0.8}
             style={[
               styles.typeButton,
               campaignType === "Items" &&
@@ -444,6 +574,24 @@ function CreateCampaign({ navigation }) {
               setCampaignType("Items")
             }
           >
+            <View
+              style={[
+                styles.typeIconContainer,
+                campaignType === "Items" &&
+                  styles.selectedTypeIconContainer,
+              ]}
+            >
+              <MaterialIcons
+                name="inventory-2"
+                size={25}
+                color={
+                  campaignType === "Items"
+                    ? "#2563EB"
+                    : "#64748B"
+                }
+              />
+            </View>
+
             <Text
               style={[
                 styles.typeButtonText,
@@ -451,13 +599,30 @@ function CreateCampaign({ navigation }) {
                   styles.selectedTypeButtonText,
               ]}
             >
-              📦 Items
+              Items
             </Text>
+
+            <Text style={styles.typeDescription}>
+              Clothing, food, blankets, etc.
+            </Text>
+
+            {campaignType === "Items" && (
+              <View style={styles.selectedIndicator}>
+                <MaterialIcons
+                  name="check-circle"
+                  size={19}
+                  color="#2563EB"
+                />
+              </View>
+            )}
           </TouchableOpacity>
 
+          {/* MONEY */}
           <TouchableOpacity
+            activeOpacity={0.8}
             style={[
               styles.typeButton,
+              styles.typeButtonRight,
               campaignType === "Money" &&
                 styles.selectedTypeButton,
             ]}
@@ -465,6 +630,24 @@ function CreateCampaign({ navigation }) {
               setCampaignType("Money")
             }
           >
+            <View
+              style={[
+                styles.typeIconContainer,
+                campaignType === "Money" &&
+                  styles.selectedTypeIconContainer,
+              ]}
+            >
+              <MaterialIcons
+                name="payments"
+                size={25}
+                color={
+                  campaignType === "Money"
+                    ? "#2563EB"
+                    : "#64748B"
+                }
+              />
+            </View>
+
             <Text
               style={[
                 styles.typeButtonText,
@@ -472,74 +655,189 @@ function CreateCampaign({ navigation }) {
                   styles.selectedTypeButtonText,
               ]}
             >
-              💰 Money
+              Money
             </Text>
+
+            <Text style={styles.typeDescription}>
+              Financial contributions.
+            </Text>
+
+            {campaignType === "Money" && (
+              <View style={styles.selectedIndicator}>
+                <MaterialIcons
+                  name="check-circle"
+                  size={19}
+                  color="#2563EB"
+                />
+              </View>
+            )}
           </TouchableOpacity>
+
         </View>
 
-        {campaignType === "Items" ? (
-          <>
-            <Text style={styles.label}>
-              Item name
+        {/* TARGET DETAILS CARD */}
+        <View style={styles.targetCard}>
+
+          <View style={styles.targetCardHeader}>
+            <View style={styles.targetIcon}>
+              <MaterialIcons
+                name={
+                  campaignType === "Items"
+                    ? "inventory-2"
+                    : "account-balance-wallet"
+                }
+                size={21}
+                color="#2563EB"
+              />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.targetTitle}>
+                {campaignType === "Items"
+                  ? "Item Target"
+                  : "Funding Target"}
+              </Text>
+
+              <Text style={styles.targetSubtitle}>
+                {campaignType === "Items"
+                  ? "Set what you want the community to collect."
+                  : "Set the amount you want the campaign to raise."}
+              </Text>
+            </View>
+          </View>
+
+          {campaignType === "Items" ? (
+            <>
+              <Text style={styles.label}>
+                Item name
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <MaterialIcons
+                  name="category"
+                  size={20}
+                  color="#94A3B8"
+                  style={styles.inputIcon}
+                />
+
+                <TextInput
+                  placeholder="Example: Blankets"
+                  placeholderTextColor="#94A3B8"
+                  value={itemName}
+                  onChangeText={setItemName}
+                  style={styles.input}
+                  maxLength={80}
+                />
+              </View>
+
+              <Text style={styles.label}>
+                Target number of items
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <MaterialIcons
+                  name="numbers"
+                  size={20}
+                  color="#94A3B8"
+                  style={styles.inputIcon}
+                />
+
+                <TextInput
+                  placeholder="Example: 500"
+                  placeholderTextColor="#94A3B8"
+                  value={targetItems}
+                  onChangeText={setTargetItems}
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.label}>
+                Target amount in Rand
+              </Text>
+
+              <View style={styles.inputContainer}>
+                <MaterialIcons
+                  name="payments"
+                  size={20}
+                  color="#94A3B8"
+                  style={styles.inputIcon}
+                />
+
+                <TextInput
+                  placeholder="Example: 50000"
+                  placeholderTextColor="#94A3B8"
+                  value={targetAmount}
+                  onChangeText={setTargetAmount}
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+              </View>
+            </>
+          )}
+
+        </View>
+
+        {/* END DATE */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionIconPurple}>
+            <MaterialIcons
+              name="event"
+              size={20}
+              color="#7C3AED"
+            />
+          </View>
+
+          <View>
+            <Text style={styles.sectionTitle}>
+              Campaign Duration
             </Text>
 
-            <TextInput
-              placeholder="Example: Blankets"
-              placeholderTextColor="#94A3B8"
-              value={itemName}
-              onChangeText={setItemName}
-              style={styles.input}
-              maxLength={80}
-            />
-
-            <Text style={styles.label}>
-              Target number of items
+            <Text style={styles.sectionSubtitle}>
+              Decide when the campaign should end.
             </Text>
-
-            <TextInput
-              placeholder="Example: 500"
-              placeholderTextColor="#94A3B8"
-              value={targetItems}
-              onChangeText={setTargetItems}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-          </>
-        ) : (
-          <>
-            <Text style={styles.label}>
-              Target amount in Rand
-            </Text>
-
-            <TextInput
-              placeholder="Example: 50000"
-              placeholderTextColor="#94A3B8"
-              value={targetAmount}
-              onChangeText={setTargetAmount}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-          </>
-        )}
+          </View>
+        </View>
 
         <Text style={styles.label}>
           End date
         </Text>
 
-        <TextInput
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor="#94A3B8"
-          value={endDate}
-          onChangeText={setEndDate}
-          style={styles.input}
-          maxLength={10}
-        />
+        <View style={styles.inputContainer}>
+          <MaterialIcons
+            name="calendar-today"
+            size={20}
+            color="#94A3B8"
+            style={styles.inputIcon}
+          />
 
-        <Text style={styles.dateHelp}>
-          Example: 2026-12-31
-        </Text>
+          <TextInput
+            placeholder="YYYY-MM-DD"
+            placeholderTextColor="#94A3B8"
+            value={endDate}
+            onChangeText={setEndDate}
+            style={styles.input}
+            maxLength={10}
+          />
+        </View>
 
+        <View style={styles.dateHelpContainer}>
+          <MaterialIcons
+            name="info-outline"
+            size={16}
+            color="#64748B"
+          />
+
+          <Text style={styles.dateHelp}>
+            Example: 2026-12-31
+          </Text>
+        </View>
+
+        {/* URGENT */}
         <TouchableOpacity
+          activeOpacity={0.8}
           style={[
             styles.urgentSelector,
             urgent && styles.urgentSelectorActive,
@@ -548,28 +846,60 @@ function CreateCampaign({ navigation }) {
         >
           <View
             style={[
+              styles.urgentIconContainer,
+              urgent &&
+                styles.urgentIconContainerActive,
+            ]}
+          >
+            <MaterialIcons
+              name="priority-high"
+              size={22}
+              color={
+                urgent ? "#EF4444" : "#64748B"
+              }
+            />
+          </View>
+
+          <View style={styles.urgentTextContainer}>
+            <View style={styles.urgentTitleRow}>
+              <Text style={styles.urgentTitle}>
+                Mark as urgent
+              </Text>
+
+              {urgent && (
+                <View style={styles.urgentBadge}>
+                  <Text style={styles.urgentBadgeText}>
+                    URGENT
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.urgentDescription}>
+              Urgent campaigns display a special alert
+              badge to attract attention.
+            </Text>
+          </View>
+
+          <View
+            style={[
               styles.checkbox,
               urgent && styles.checkboxSelected,
             ]}
           >
             {urgent && (
-              <Text style={styles.checkmark}>✓</Text>
+              <MaterialIcons
+                name="check"
+                size={17}
+                color="#FFFFFF"
+              />
             )}
-          </View>
-
-          <View style={styles.urgentTextContainer}>
-            <Text style={styles.urgentTitle}>
-              Mark as urgent
-            </Text>
-
-            <Text style={styles.urgentDescription}>
-              Urgent campaigns display a special alert
-              badge.
-            </Text>
           </View>
         </TouchableOpacity>
 
+        {/* CREATE BUTTON */}
         <TouchableOpacity
+          activeOpacity={0.85}
           style={[
             styles.createButton,
             creating && styles.disabledButton,
@@ -589,23 +919,40 @@ function CreateCampaign({ navigation }) {
               </Text>
             </View>
           ) : (
-            <Text style={styles.createButtonText}>
-              Create Campaign
-            </Text>
+            <View style={styles.buttonContent}>
+              <MaterialIcons
+                name="add-circle-outline"
+                size={22}
+                color="#FFFFFF"
+              />
+
+              <Text style={styles.createButtonText}>
+                Create Campaign
+              </Text>
+            </View>
           )}
         </TouchableOpacity>
 
+        {/* CANCEL */}
         <TouchableOpacity
+          activeOpacity={0.7}
           style={styles.cancelButton}
           onPress={() => navigation.goBack()}
           disabled={creating}
         >
+          <MaterialIcons
+            name="close"
+            size={19}
+            color="#64748B"
+          />
+
           <Text style={styles.cancelButtonText}>
             Cancel
           </Text>
         </TouchableOpacity>
 
-        <View style={{ height: 50 }} />
+        <View style={{ height: 60 }} />
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -621,7 +968,12 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     paddingHorizontal: 20,
+    paddingTop: 8,
   },
+
+  /* =========================
+     LOADING
+  ========================= */
 
   loadingContainer: {
     flex: 1,
@@ -630,75 +982,236 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  loadingIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+
   loadingText: {
     color: "#64748B",
     fontSize: 15,
     fontWeight: "600",
-    marginTop: 14,
+    marginTop: 12,
+  },
+
+  /* =========================
+     HEADER
+  ========================= */
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+    marginBottom: 18,
+  },
+
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000000",
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+
+  headerIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: "#2563EB",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#2563EB",
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  headingContainer: {
+    marginBottom: 28,
   },
 
   heading: {
     color: "#1E293B",
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "800",
-    marginTop: 20,
+    letterSpacing: -0.5,
   },
 
   subtitle: {
     color: "#64748B",
     fontSize: 15,
     lineHeight: 22,
-    marginTop: 7,
-    marginBottom: 25,
+    marginTop: 8,
+    maxWidth: 350,
+  },
+
+  /* =========================
+     SECTION HEADERS
+  ========================= */
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 17,
+    marginTop: 4,
+  },
+
+  sectionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  sectionIconGreen: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "#F0FDF4",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  sectionIconPurple: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "#F5F3FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  sectionTitle: {
+    color: "#1E293B",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  sectionSubtitle: {
+    color: "#94A3B8",
+    fontSize: 11,
+    marginTop: 2,
+    maxWidth: 290,
+  },
+
+  /* =========================
+     LABELS
+  ========================= */
+
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 
   label: {
     color: "#1E293B",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     marginBottom: 8,
-  },
-
-  input: {
-    minHeight: 55,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 15,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    color: "#1E293B",
-    fontSize: 15,
-    marginBottom: 18,
-  },
-
-  descriptionInput: {
-    height: 120,
   },
 
   characterCount: {
     color: "#94A3B8",
     fontSize: 11,
-    textAlign: "right",
-    marginTop: -13,
-    marginBottom: 18,
+    marginBottom: 8,
   },
+
+  /* =========================
+     INPUTS
+  ========================= */
+
+  inputContainer: {
+    minHeight: 55,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    marginBottom: 19,
+
+    shadowColor: "#000000",
+    shadowOpacity: 0.025,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+
+  inputIcon: {
+    marginRight: 11,
+  },
+
+  input: {
+    flex: 1,
+    minHeight: 53,
+    color: "#1E293B",
+    fontSize: 15,
+    paddingVertical: 12,
+  },
+
+  descriptionContainer: {
+    minHeight: 130,
+    alignItems: "flex-start",
+    paddingTop: 14,
+  },
+
+  descriptionIcon: {
+    marginRight: 11,
+    marginTop: 2,
+  },
+
+  descriptionInput: {
+    height: 110,
+    textAlignVertical: "top",
+  },
+
+  /* =========================
+     CAMPAIGN TYPE
+  ========================= */
 
   typeRow: {
     flexDirection: "row",
-    marginBottom: 20,
+    marginBottom: 23,
   },
 
   typeButton: {
     flex: 1,
-    minHeight: 52,
+    minHeight: 145,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
+    borderColor: "#E2E8F0",
+    borderRadius: 18,
+    padding: 16,
     marginRight: 7,
+
+    shadowColor: "#000000",
+    shadowOpacity: 0.035,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+
+  typeButtonRight: {
+    marginRight: 0,
+    marginLeft: 7,
   },
 
   selectedTypeButton: {
@@ -707,23 +1220,113 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
 
+  typeIconContainer: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "#F8FAFC",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  selectedTypeIconContainer: {
+    backgroundColor: "#DBEAFE",
+  },
+
   typeButtonText: {
-    color: "#64748B",
-    fontSize: 14,
-    fontWeight: "600",
+    color: "#475569",
+    fontSize: 16,
+    fontWeight: "800",
   },
 
   selectedTypeButtonText: {
     color: "#2563EB",
+  },
+
+  typeDescription: {
+    color: "#94A3B8",
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 4,
+    paddingRight: 5,
+  },
+
+  selectedIndicator: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+  },
+
+  /* =========================
+     TARGET CARD
+  ========================= */
+
+  targetCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 19,
+    padding: 18,
+    marginBottom: 28,
+
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+
+    shadowColor: "#000000",
+    shadowOpacity: 0.04,
+    shadowRadius: 7,
+    elevation: 2,
+  },
+
+  targetCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  targetIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
+  },
+
+  targetTitle: {
+    color: "#1E293B",
+    fontSize: 15,
     fontWeight: "800",
   },
 
-  dateHelp: {
+  targetSubtitle: {
     color: "#94A3B8",
-    fontSize: 12,
-    marginTop: -12,
-    marginBottom: 20,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
   },
+
+  /* =========================
+     DATE
+  ========================= */
+
+  dateHelpContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: -10,
+    marginBottom: 25,
+    paddingLeft: 3,
+  },
+
+  dateHelp: {
+    color: "#64748B",
+    fontSize: 12,
+    marginLeft: 5,
+  },
+
+  /* =========================
+     URGENT
+  ========================= */
 
   urgentSelector: {
     flexDirection: "row",
@@ -731,9 +1334,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
+    borderRadius: 18,
+    padding: 15,
+    marginBottom: 25,
+
+    shadowColor: "#000000",
+    shadowOpacity: 0.025,
+    shadowRadius: 5,
+    elevation: 1,
   },
 
   urgentSelectorActive: {
@@ -741,15 +1349,66 @@ const styles = StyleSheet.create({
     borderColor: "#EF4444",
   },
 
+  urgentIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    backgroundColor: "#F8FAFC",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  urgentIconContainerActive: {
+    backgroundColor: "#FEE2E2",
+  },
+
+  urgentTextContainer: {
+    flex: 1,
+    paddingRight: 8,
+  },
+
+  urgentTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  urgentTitle: {
+    color: "#1E293B",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  urgentBadge: {
+    backgroundColor: "#FEE2E2",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginLeft: 7,
+  },
+
+  urgentBadgeText: {
+    color: "#DC2626",
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+
+  urgentDescription: {
+    color: "#64748B",
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 4,
+  },
+
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
+    width: 25,
+    height: 25,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: "#CBD5E1",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 13,
   },
 
   checkboxSelected: {
@@ -757,35 +1416,21 @@ const styles = StyleSheet.create({
     borderColor: "#EF4444",
   },
 
-  checkmark: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-
-  urgentTextContainer: {
-    flex: 1,
-  },
-
-  urgentTitle: {
-    color: "#1E293B",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  urgentDescription: {
-    color: "#64748B",
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 3,
-  },
+  /* =========================
+     BUTTONS
+  ========================= */
 
   createButton: {
-    minHeight: 56,
+    minHeight: 58,
     backgroundColor: "#2563EB",
-    borderRadius: 15,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
+
+    shadowColor: "#2563EB",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   disabledButton: {
@@ -795,6 +1440,7 @@ const styles = StyleSheet.create({
   buttonContent: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
   },
 
   createButtonText: {
@@ -812,11 +1458,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginTop: 12,
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
   },
 
   cancelButtonText: {
     color: "#64748B",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
+    marginLeft: 5,
   },
 });

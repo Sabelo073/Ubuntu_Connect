@@ -15,6 +15,8 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
 import {
   collection,
   query,
@@ -56,10 +58,41 @@ const Chat = ({ route, navigation }) => {
     }
   };
 
+  /*
+    ----------------------------------------------------
+    CHAT HEADER
+    ----------------------------------------------------
+  */
+
   useEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      title: otherUserName,
+
+      headerTitle: () => (
+        <View style={styles.headerContainer}>
+          <View style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>
+              {otherUserName?.charAt(0)?.toUpperCase() || "U"}
+            </Text>
+
+            <View style={styles.onlineDot} />
+          </View>
+
+          <View style={styles.headerTextContainer}>
+            <Text
+              style={styles.headerName}
+              numberOfLines={1}
+            >
+              {otherUserName}
+            </Text>
+
+            <Text style={styles.headerStatus}>
+              Ubuntu Connect
+            </Text>
+          </View>
+        </View>
+      ),
+
       headerTintColor: "#1E293B",
 
       headerStyle: {
@@ -71,8 +104,28 @@ const Chat = ({ route, navigation }) => {
       },
 
       headerShadowVisible: false,
+
+      headerLeft: () => (
+        <TouchableOpacity
+          style={styles.headerBackButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons
+            name="arrow-back"
+            size={24}
+            color="#1E293B"
+          />
+        </TouchableOpacity>
+      ),
     });
   }, [navigation, otherUserName]);
+
+  /*
+    ----------------------------------------------------
+    MARK RECEIVED MESSAGES AS READ
+    ----------------------------------------------------
+  */
 
   const markReceivedMessagesAsRead = async (
     receivedMessages
@@ -138,6 +191,12 @@ const Chat = ({ route, navigation }) => {
     }
   };
 
+  /*
+    ----------------------------------------------------
+    LOAD MESSAGES
+    ----------------------------------------------------
+  */
+
   useEffect(() => {
     if (!chatId || !currentUser) {
       setLoading(false);
@@ -191,6 +250,12 @@ const Chat = ({ route, navigation }) => {
     return () => unsubscribe();
   }, [chatId, currentUser?.uid]);
 
+  /*
+    ----------------------------------------------------
+    MESSAGE NOTIFICATION
+    ----------------------------------------------------
+  */
+
   const createMessageNotification = async (
     cleanMessage
   ) => {
@@ -235,14 +300,14 @@ const Chat = ({ route, navigation }) => {
         error.code,
         error.message
       );
-
-      /*
-        The message was already sent successfully.
-        A notification failure should not make the
-        user send the same message again.
-      */
     }
   };
+
+  /*
+    ----------------------------------------------------
+    SEND MESSAGE
+    ----------------------------------------------------
+  */
 
   const sendMessage = async () => {
     const cleanMessage = messageText.trim();
@@ -314,6 +379,12 @@ const Chat = ({ route, navigation }) => {
     }
   };
 
+  /*
+    ----------------------------------------------------
+    FORMAT MESSAGE TIME
+    ----------------------------------------------------
+  */
+
   const formatMessageTime = (createdAt) => {
     if (!createdAt) {
       return "Sending...";
@@ -334,6 +405,49 @@ const Chat = ({ route, navigation }) => {
     });
   };
 
+  /*
+    ----------------------------------------------------
+    MESSAGE STATUS ICON
+    ----------------------------------------------------
+  */
+
+  const renderMessageStatus = (item) => {
+    if (item.read === true) {
+      return (
+        <View style={styles.readStatus}>
+          <MaterialIcons
+            name="done-all"
+            size={15}
+            color="#DBEAFE"
+          />
+          <Text style={styles.readStatusText}>
+            Read
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.sentStatus}>
+        <MaterialIcons
+          name="done"
+          size={14}
+          color="#DBEAFE"
+        />
+
+        <Text style={styles.sentStatusText}>
+          Sent
+        </Text>
+      </View>
+    );
+  };
+
+  /*
+    ----------------------------------------------------
+    RENDER MESSAGE
+    ----------------------------------------------------
+  */
+
   const renderMessage = ({ item }) => {
     const isMyMessage =
       item.senderId === currentUser?.uid;
@@ -348,6 +462,16 @@ const Chat = ({ route, navigation }) => {
             : styles.otherMessageRow,
         ]}
       >
+        {!isMyMessage && (
+          <View style={styles.smallAvatar}>
+            <Text style={styles.smallAvatarText}>
+              {otherUserName
+                ?.charAt(0)
+                ?.toUpperCase() || "U"}
+            </Text>
+          </View>
+        )}
+
         <View
           style={[
             styles.messageBubble,
@@ -369,7 +493,14 @@ const Chat = ({ route, navigation }) => {
             {item.text}
           </Text>
 
-          <View style={styles.messageDetails}>
+          <View
+            style={[
+              styles.messageDetails,
+
+              !isMyMessage &&
+                styles.otherMessageDetails,
+            ]}
+          >
             <Text
               style={[
                 styles.messageTime,
@@ -383,34 +514,32 @@ const Chat = ({ route, navigation }) => {
               )}
             </Text>
 
-            {isMyMessage && (
-              <Text
-                style={[
-                  styles.deliveryStatus,
-
-                  item.read === true &&
-                    styles.readDeliveryStatus,
-                ]}
-              >
-                {item.read === true
-                  ? "✓✓ Read"
-                  : "✓ Sent"}
-              </Text>
-            )}
+            {isMyMessage &&
+              renderMessageStatus(item)}
           </View>
         </View>
       </View>
     );
   };
 
+  /*
+    ----------------------------------------------------
+    EMPTY / ERROR STATE
+    ----------------------------------------------------
+  */
+
   if (!chatId || !currentUser) {
     return (
       <SafeAreaView
         style={styles.centerContainer}
       >
-        <Text style={styles.errorIcon}>
-          💬
-        </Text>
+        <View style={styles.errorIconContainer}>
+          <MaterialIcons
+            name="chat-bubble-outline"
+            size={42}
+            color="#2563EB"
+          />
+        </View>
 
         <Text style={styles.errorTitle}>
           Conversation Unavailable
@@ -423,7 +552,14 @@ const Chat = ({ route, navigation }) => {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          activeOpacity={0.85}
         >
+          <MaterialIcons
+            name="arrow-back"
+            size={19}
+            color="#FFFFFF"
+          />
+
           <Text style={styles.backButtonText}>
             Go Back
           </Text>
@@ -431,6 +567,12 @@ const Chat = ({ route, navigation }) => {
       </SafeAreaView>
     );
   }
+
+  /*
+    ----------------------------------------------------
+    MAIN CHAT UI
+    ----------------------------------------------------
+  */
 
   return (
     <SafeAreaView
@@ -450,8 +592,16 @@ const Chat = ({ route, navigation }) => {
       >
         {loading ? (
           <View style={styles.centerContainer}>
+            <View style={styles.loadingIconContainer}>
+              <MaterialIcons
+                name="chat"
+                size={32}
+                color="#2563EB"
+              />
+            </View>
+
             <ActivityIndicator
-              size="large"
+              size="small"
               color="#2563EB"
             />
 
@@ -481,11 +631,11 @@ const Chat = ({ route, navigation }) => {
                     styles.emptyIconContainer
                   }
                 >
-                  <Text
-                    style={styles.emptyIcon}
-                  >
-                    💬
-                  </Text>
+                  <MaterialIcons
+                    name="chat-bubble-outline"
+                    size={46}
+                    color="#2563EB"
+                  />
                 </View>
 
                 <Text style={styles.emptyTitle}>
@@ -493,53 +643,100 @@ const Chat = ({ route, navigation }) => {
                 </Text>
 
                 <Text style={styles.emptyText}>
-                  Send a message to coordinate the
-                  donation, collection, or help
-                  request.
+                  Connect with {otherUserName} to
+                  coordinate the donation, collection,
+                  or help request.
                 </Text>
+
+                <View style={styles.emptyHint}>
+                  <MaterialIcons
+                    name="lock-outline"
+                    size={16}
+                    color="#64748B"
+                  />
+
+                  <Text style={styles.emptyHintText}>
+                    Your conversation is private
+                  </Text>
+                </View>
               </View>
             }
           />
         )}
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            placeholder="Type a message..."
-            placeholderTextColor="#94A3B8"
-            value={messageText}
-            onChangeText={setMessageText}
-            multiline
-            maxLength={1000}
-            autoCorrect
-            style={styles.input}
-          />
+        {/*
+          ------------------------------------------------
+          MESSAGE INPUT
+          ------------------------------------------------
+        */}
 
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-
-              (!messageText.trim() ||
-                sending) &&
-                styles.disabledSendButton,
-            ]}
-            onPress={sendMessage}
-            disabled={
-              !messageText.trim() || sending
-            }
-          >
-            {sending ? (
-              <ActivityIndicator
-                size="small"
-                color="#FFFFFF"
+        <View style={styles.inputArea}>
+          <View style={styles.inputContainer}>
+            <TouchableOpacity
+              style={styles.attachButton}
+              activeOpacity={0.7}
+              onPress={() => {
+                showError(
+                  "Coming Soon",
+                  "Attachment support will be available in a future update."
+                );
+              }}
+            >
+              <MaterialIcons
+                name="add"
+                size={24}
+                color="#64748B"
               />
-            ) : (
-              <Text
-                style={styles.sendButtonText}
-              >
-                ➤
-              </Text>
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
+
+            <TextInput
+              placeholder="Message..."
+              placeholderTextColor="#94A3B8"
+              value={messageText}
+              onChangeText={setMessageText}
+              multiline
+              maxLength={1000}
+              autoCorrect
+              style={styles.input}
+            />
+
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+
+                (!messageText.trim() ||
+                  sending) &&
+                  styles.disabledSendButton,
+              ]}
+              onPress={sendMessage}
+              disabled={
+                !messageText.trim() || sending
+              }
+              activeOpacity={0.8}
+            >
+              {sending ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#FFFFFF"
+                />
+              ) : (
+                <MaterialIcons
+                  name="send"
+                  size={21}
+                  color="#FFFFFF"
+                />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.chatSafetyText}>
+            <MaterialIcons
+              name="verified-user"
+              size={12}
+              color="#94A3B8"
+            />{" "}
+            Keep conversations respectful and safe
+          </Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -549,6 +746,12 @@ const Chat = ({ route, navigation }) => {
 export default Chat;
 
 const styles = StyleSheet.create({
+  /*
+    ----------------------------------------------------
+    GENERAL
+    ----------------------------------------------------
+  */
+
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -568,13 +771,85 @@ const styles = StyleSheet.create({
 
   loadingText: {
     color: "#64748B",
-    marginTop: 12,
+    marginTop: 10,
     fontWeight: "600",
+    fontSize: 14,
   },
 
+  /*
+    ----------------------------------------------------
+    CHAT HEADER
+    ----------------------------------------------------
+  */
+
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: 230,
+  },
+
+  headerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+    position: "relative",
+  },
+
+  headerAvatarText: {
+    color: "#2563EB",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  onlineDot: {
+    position: "absolute",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#22C55E",
+    right: -1,
+    bottom: -1,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+
+  headerTextContainer: {
+    flexShrink: 1,
+  },
+
+  headerName: {
+    color: "#1E293B",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  headerStatus: {
+    color: "#64748B",
+    fontSize: 11,
+    marginTop: 1,
+  },
+
+  headerBackButton: {
+    width: 42,
+    height: 42,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 4,
+  },
+
+  /*
+    ----------------------------------------------------
+    MESSAGES
+    ----------------------------------------------------
+  */
+
   messageList: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 18,
   },
 
   emptyMessageList: {
@@ -584,22 +859,41 @@ const styles = StyleSheet.create({
 
   messageRow: {
     width: "100%",
-    marginBottom: 10,
-  },
-
-  myMessageRow: {
+    marginBottom: 9,
+    flexDirection: "row",
     alignItems: "flex-end",
   },
 
+  myMessageRow: {
+    justifyContent: "flex-end",
+  },
+
   otherMessageRow: {
-    alignItems: "flex-start",
+    justifyContent: "flex-start",
+  },
+
+  smallAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#E0E7FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 7,
+    marginBottom: 2,
+  },
+
+  smallAvatarText: {
+    color: "#4F46E5",
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   messageBubble: {
-    maxWidth: "80%",
-    borderRadius: 18,
+    maxWidth: "78%",
+    borderRadius: 19,
     paddingHorizontal: 14,
-    paddingTop: 11,
+    paddingTop: 10,
     paddingBottom: 7,
   },
 
@@ -608,8 +902,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 5,
 
     shadowColor: "#2563EB",
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
     elevation: 2,
   },
 
@@ -621,7 +920,12 @@ const styles = StyleSheet.create({
 
     shadowColor: "#000000",
     shadowOpacity: 0.04,
-    shadowRadius: 4,
+    shadowRadius: 5,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
     elevation: 1,
   },
 
@@ -645,9 +949,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 
+  otherMessageDetails: {
+    justifyContent: "flex-end",
+  },
+
   messageTime: {
     fontSize: 10,
-    textAlign: "right",
     color: "#94A3B8",
   },
 
@@ -655,101 +962,173 @@ const styles = StyleSheet.create({
     color: "#DBEAFE",
   },
 
-  deliveryStatus: {
-    color: "#BFDBFE",
-    fontSize: 10,
-    fontWeight: "600",
-    marginLeft: 7,
+  sentStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 6,
   },
 
-  readDeliveryStatus: {
-    color: "#FFFFFF",
-    fontWeight: "800",
+  sentStatusText: {
+    color: "#DBEAFE",
+    fontSize: 10,
+    fontWeight: "600",
+    marginLeft: 2,
+  },
+
+  readStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 6,
+  },
+
+  readStatusText: {
+    color: "#DBEAFE",
+    fontSize: 10,
+    fontWeight: "700",
+    marginLeft: 2,
+  },
+
+  /*
+    ----------------------------------------------------
+    INPUT AREA
+    ----------------------------------------------------
+  */
+
+  inputArea: {
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+    paddingTop: 9,
+    paddingHorizontal: 12,
+    paddingBottom: Platform.OS === "ios" ? 8 : 7,
   },
 
   inputContainer: {
     flexDirection: "row",
     alignItems: "flex-end",
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 27,
+    minHeight: 52,
+    paddingLeft: 4,
+    paddingRight: 5,
+  },
+
+  attachButton: {
+    width: 44,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   input: {
     flex: 1,
     minHeight: 48,
-    maxHeight: 110,
-    backgroundColor: "#F1F5F9",
-    borderRadius: 24,
-    paddingHorizontal: 18,
+    maxHeight: 115,
+    paddingHorizontal: 8,
     paddingTop: 13,
-    paddingBottom: 12,
+    paddingBottom: 11,
     color: "#1E293B",
     fontSize: 15,
+    lineHeight: 20,
   },
 
   sendButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#22C55E",
     justifyContent: "center",
     alignItems: "center",
-    marginLeft: 10,
+    marginBottom: 4,
   },
 
   disabledSendButton: {
     backgroundColor: "#CBD5E1",
   },
 
-  sendButtonText: {
-    color: "#FFFFFF",
-    fontSize: 21,
-    fontWeight: "800",
+  chatSafetyText: {
+    color: "#94A3B8",
+    fontSize: 10,
+    textAlign: "center",
+    marginTop: 6,
   },
+
+  /*
+    ----------------------------------------------------
+    EMPTY STATE
+    ----------------------------------------------------
+  */
 
   emptyContainer: {
     alignItems: "center",
-    paddingHorizontal: 30,
+    paddingHorizontal: 32,
   },
 
   emptyIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
     backgroundColor: "#EFF6FF",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 18,
-  },
 
-  emptyIcon: {
-    fontSize: 48,
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
   },
 
   emptyTitle: {
     color: "#1E293B",
     fontSize: 21,
-    fontWeight: "700",
+    fontWeight: "800",
+    textAlign: "center",
   },
 
   emptyText: {
     color: "#64748B",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 21,
     marginTop: 8,
+    fontSize: 14,
   },
 
-  errorIcon: {
-    fontSize: 60,
+  emptyHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    borderRadius: 20,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    marginTop: 17,
+  },
+
+  emptyHintText: {
+    color: "#64748B",
+    fontSize: 11,
+    fontWeight: "600",
+    marginLeft: 5,
+  },
+
+  /*
+    ----------------------------------------------------
+    ERROR STATE
+    ----------------------------------------------------
+  */
+
+  errorIconContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 5,
   },
 
   errorTitle: {
     color: "#1E293B",
     fontSize: 21,
-    fontWeight: "700",
+    fontWeight: "800",
     marginTop: 15,
   },
 
@@ -757,6 +1136,7 @@ const styles = StyleSheet.create({
     color: "#64748B",
     textAlign: "center",
     marginTop: 8,
+    lineHeight: 21,
   },
 
   backButton: {
@@ -765,10 +1145,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 13,
     marginTop: 22,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   backButtonText: {
     color: "#FFFFFF",
     fontWeight: "700",
+    marginLeft: 7,
+  },
+
+  /*
+    ----------------------------------------------------
+    LOADING
+    ----------------------------------------------------
+  */
+
+  loadingIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
   },
 });

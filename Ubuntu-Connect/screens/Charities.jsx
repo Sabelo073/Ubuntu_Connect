@@ -17,9 +17,8 @@ import {
   Linking,
 } from "react-native";
 
-import {
-  SafeAreaView,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import {
   collection,
@@ -324,6 +323,40 @@ const Charities = ({ navigation }) => {
     });
   };
 
+  const getCharityIcon = (type) => {
+    const value = type?.toLowerCase() || "";
+
+    if (
+      value.includes("school") ||
+      value.includes("education")
+    ) {
+      return "school";
+    }
+
+    if (
+      value.includes("medical") ||
+      value.includes("health")
+    ) {
+      return "medical-services";
+    }
+
+    if (
+      value.includes("food") ||
+      value.includes("shelter")
+    ) {
+      return "volunteer-activism";
+    }
+
+    if (
+      value.includes("children") ||
+      value.includes("child")
+    ) {
+      return "child-care";
+    }
+
+    return "handshake";
+  };
+
   const renderCharity = ({ item }) => {
     const isExpanded =
       expandedCharityId === item.id;
@@ -353,12 +386,17 @@ const Charities = ({ navigation }) => {
 
     return (
       <View style={styles.card}>
+
+        {/* Card Header */}
         <View style={styles.cardHeader}>
           <View style={styles.nameContainer}>
+
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {avatarLetter}
-              </Text>
+              <MaterialIcons
+                name={getCharityIcon(item.type)}
+                size={24}
+                color="#FFFFFF"
+              />
             </View>
 
             <View
@@ -379,16 +417,28 @@ const Charities = ({ navigation }) => {
 
           {item.verified === true ? (
             <View style={styles.verifiedBadge}>
+              <MaterialIcons
+                name="verified"
+                size={14}
+                color="#16A34A"
+              />
+
               <Text
                 style={styles.verifiedBadgeText}
               >
-                ✓ Verified
+                Verified
               </Text>
             </View>
           ) : (
             <View
               style={styles.unverifiedBadge}
             >
+              <MaterialIcons
+                name="info-outline"
+                size={14}
+                color="#D97706"
+              />
+
               <Text
                 style={
                   styles.unverifiedBadgeText
@@ -400,35 +450,75 @@ const Charities = ({ navigation }) => {
           )}
         </View>
 
-        <Text style={styles.location}>
-          📍 {charityLocation}
-        </Text>
+        {/* Location */}
+        <View style={styles.locationRow}>
+          <View style={styles.locationIcon}>
+            <MaterialIcons
+              name="location-on"
+              size={16}
+              color="#2563EB"
+            />
+          </View>
+
+          <Text style={styles.location}>
+            {charityLocation}
+          </Text>
+        </View>
 
         {item.distance ? (
-          <Text style={styles.distance}>
-            {item.distance} away
-          </Text>
+          <View style={styles.distanceRow}>
+            <MaterialIcons
+              name="near-me"
+              size={14}
+              color="#94A3B8"
+            />
+
+            <Text style={styles.distance}>
+              {item.distance} away
+            </Text>
+          </View>
         ) : null}
 
+        {/* Needs */}
         <View style={styles.needsContainer}>
-          <Text style={styles.needsLabel}>
-            Current needs
-          </Text>
+          <View style={styles.needsHeader}>
+            <MaterialIcons
+              name="volunteer-activism"
+              size={17}
+              color="#7C3AED"
+            />
+
+            <Text style={styles.needsLabel}>
+              Current needs
+            </Text>
+          </View>
 
           <Text style={styles.needsText}>
             {charityNeeds}
           </Text>
         </View>
 
+        {/* Expanded Details */}
         {isExpanded && (
           <View style={styles.detailsContainer}>
+
             {item.description ? (
               <View
                 style={styles.detailSection}
               >
-                <Text style={styles.detailTitle}>
-                  About
-                </Text>
+                <View style={styles.detailTitleRow}>
+                  <MaterialIcons
+                    name="info-outline"
+                    size={17}
+                    color="#2563EB"
+                  />
+
+                  <Text
+                    style={styles.detailTitle}
+                  >
+                    About
+                  </Text>
+                </View>
 
                 <Text style={styles.detailText}>
                   {item.description}
@@ -437,9 +527,19 @@ const Charities = ({ navigation }) => {
             ) : null}
 
             <View style={styles.detailSection}>
-              <Text style={styles.detailTitle}>
-                Services offered
-              </Text>
+              <View style={styles.detailTitleRow}>
+                <MaterialIcons
+                  name="support"
+                  size={17}
+                  color="#22C55E"
+                />
+
+                <Text
+                  style={styles.detailTitle}
+                >
+                  Services offered
+                </Text>
+              </View>
 
               <Text style={styles.detailText}>
                 {charityServices}
@@ -453,17 +553,27 @@ const Charities = ({ navigation }) => {
                   callCharity(item)
                 }
               >
-                <Text
-                  style={styles.contactIcon}
+                <View
+                  style={styles.contactIconContainer}
                 >
-                  📞
-                </Text>
+                  <MaterialIcons
+                    name="phone"
+                    size={17}
+                    color="#22C55E"
+                  />
+                </View>
 
                 <Text
                   style={styles.contactDetail}
                 >
                   {item.phone}
                 </Text>
+
+                <MaterialIcons
+                  name="chevron-right"
+                  size={19}
+                  color="#94A3B8"
+                />
               </TouchableOpacity>
             ) : null}
 
@@ -474,46 +584,77 @@ const Charities = ({ navigation }) => {
                   openEmail(item)
                 }
               >
-                <Text
-                  style={styles.contactIcon}
+                <View
+                  style={styles.contactIconContainer}
                 >
-                  ✉️
-                </Text>
+                  <MaterialIcons
+                    name="email"
+                    size={17}
+                    color="#2563EB"
+                  />
+                </View>
 
                 <Text
                   style={styles.contactDetail}
+                  numberOfLines={1}
                 >
                   {item.email}
                 </Text>
+
+                <MaterialIcons
+                  name="chevron-right"
+                  size={19}
+                  color="#94A3B8"
+                />
               </TouchableOpacity>
             ) : null}
           </View>
         )}
 
+        {/* Details Toggle */}
         <TouchableOpacity
           style={styles.detailsButton}
           onPress={() =>
             toggleCharityDetails(item.id)
           }
+          activeOpacity={0.7}
         >
           <Text
             style={styles.detailsButtonText}
           >
             {isExpanded
-              ? "Hide Details ▲"
-              : "View Details ▼"}
+              ? "Hide Details"
+              : "View Details"}
           </Text>
+
+          <MaterialIcons
+            name={
+              isExpanded
+                ? "keyboard-arrow-up"
+                : "keyboard-arrow-down"
+            }
+            size={20}
+            color="#2563EB"
+          />
         </TouchableOpacity>
 
+        {/* Action Buttons */}
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={styles.supportButton}
             onPress={() =>
               supportCharity(item)
             }
+            activeOpacity={0.85}
           >
+            <MaterialIcons
+              name="card-giftcard"
+              size={19}
+              color="#FFFFFF"
+            />
+
             <Text style={styles.supportText}>
-              🎁 Donate
+              Donate
             </Text>
           </TouchableOpacity>
 
@@ -522,7 +663,14 @@ const Charities = ({ navigation }) => {
             onPress={() =>
               contactCharity(item)
             }
+            activeOpacity={0.85}
           >
+            <MaterialIcons
+              name="contact-phone"
+              size={19}
+              color="#FFFFFF"
+            />
+
             <Text style={styles.contactText}>
               Contact
             </Text>
@@ -537,9 +685,18 @@ const Charities = ({ navigation }) => {
       <SafeAreaView
         style={styles.loadingContainer}
       >
+        <View style={styles.loadingIcon}>
+          <MaterialIcons
+            name="handshake"
+            size={30}
+            color="#7C3AED"
+          />
+        </View>
+
         <ActivityIndicator
-          size="large"
+          size="small"
           color="#2563EB"
+          style={styles.loadingSpinner}
         />
 
         <Text style={styles.loadingText}>
@@ -554,19 +711,49 @@ const Charities = ({ navigation }) => {
       style={styles.container}
       edges={["top", "left", "right"]}
     >
-      <Text style={styles.heading}>
-        Community Charities
-      </Text>
 
-      <Text style={styles.subtitle}>
-        Discover and support organisations
-        making a difference.
-      </Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation?.goBack()}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons
+            name="arrow-back"
+            size={23}
+            color="#1E293B"
+          />
+        </TouchableOpacity>
 
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.heading}>
+            Community Charities
+          </Text>
+
+          <Text style={styles.subtitle}>
+            Discover organisations making a
+            difference.
+          </Text>
+        </View>
+
+        <View style={styles.headerIcon}>
+          <MaterialIcons
+            name="handshake"
+            size={25}
+            color="#7C3AED"
+          />
+        </View>
+      </View>
+
+      {/* Search */}
       <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>
-          🔍
-        </Text>
+        <MaterialIcons
+          name="search"
+          size={21}
+          color="#64748B"
+          style={styles.searchIcon}
+        />
 
         <TextInput
           placeholder="Search charities..."
@@ -586,19 +773,32 @@ const Charities = ({ navigation }) => {
               setSearchText("")
             }
           >
-            <Text style={styles.clearText}>
-              ✕
-            </Text>
+            <MaterialIcons
+              name="close"
+              size={19}
+              color="#64748B"
+            />
           </TouchableOpacity>
         )}
       </View>
 
-      <Text style={styles.resultsText}>
-        {filteredCharities.length}{" "}
-        {filteredCharities.length === 1
-          ? "organisation"
-          : "organisations"}
-      </Text>
+      {/* Results */}
+      <View style={styles.resultsRow}>
+        <View style={styles.resultsLeft}>
+          <MaterialIcons
+            name="groups"
+            size={17}
+            color="#64748B"
+          />
+
+          <Text style={styles.resultsText}>
+            {filteredCharities.length}{" "}
+            {filteredCharities.length === 1
+              ? "organisation"
+              : "organisations"}
+          </Text>
+        </View>
+      </View>
 
       <FlatList
         data={filteredCharities}
@@ -613,14 +813,21 @@ const Charities = ({ navigation }) => {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
+
             <View
               style={
                 styles.emptyIconContainer
               }
             >
-              <Text style={styles.emptyIcon}>
-                🤝
-              </Text>
+              <MaterialIcons
+                name={
+                  searchText.trim()
+                    ? "search-off"
+                    : "handshake"
+                }
+                size={52}
+                color="#7C3AED"
+              />
             </View>
 
             <Text style={styles.emptyTitle}>
@@ -644,6 +851,12 @@ const Charities = ({ navigation }) => {
                   setSearchText("")
                 }
               >
+                <MaterialIcons
+                  name="refresh"
+                  size={18}
+                  color="#FFFFFF"
+                />
+
                 <Text
                   style={
                     styles.clearSearchText
@@ -669,6 +882,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
 
+  /* Loading */
   loadingContainer: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -676,33 +890,78 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  loadingIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: "#F3E8FF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingSpinner: {
+    marginTop: 18,
+  },
+
   loadingText: {
     color: "#64748B",
-    fontSize: 15,
-    fontWeight: "600",
-    marginTop: 14,
-  },
-
-  heading: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#1E293B",
-    marginTop: 20,
-  },
-
-  subtitle: {
     fontSize: 14,
-    color: "#64748B",
-    lineHeight: 21,
-    marginTop: 6,
+    fontWeight: "600",
+    marginTop: 10,
+  },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
     marginBottom: 20,
   },
 
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginRight: 12,
+  },
+
+  headerTextContainer: {
+    flex: 1,
+  },
+
+  heading: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#1E293B",
+  },
+
+  subtitle: {
+    fontSize: 13,
+    color: "#64748B",
+    lineHeight: 19,
+    marginTop: 4,
+  },
+
+  headerIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: "#F3E8FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Search */
   searchContainer: {
     height: 55,
     backgroundColor: "#FFFFFF",
     borderRadius: 15,
-    paddingHorizontal: 16,
+    paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     flexDirection: "row",
@@ -710,46 +969,54 @@ const styles = StyleSheet.create({
   },
 
   searchIcon: {
-    fontSize: 17,
-    marginRight: 10,
+    marginRight: 9,
   },
 
   searchInput: {
     flex: 1,
     height: "100%",
     color: "#1E293B",
-    fontSize: 15,
+    fontSize: 14,
   },
 
   clearButton: {
     padding: 6,
   },
 
-  clearText: {
-    color: "#64748B",
-    fontSize: 15,
-    fontWeight: "700",
+  /* Results */
+  resultsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    marginBottom: 13,
+  },
+
+  resultsLeft: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   resultsText: {
     color: "#64748B",
     fontSize: 12,
     fontWeight: "600",
-    marginTop: 12,
-    marginBottom: 14,
+    marginLeft: 6,
   },
 
   listContent: {
     paddingBottom: 100,
   },
 
-   card: {
+  /* Charity Card */
+  card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 18,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
+    borderColor: "#E2E8F0",
+
     shadowColor: "#000000",
     shadowOffset: {
       width: 0,
@@ -774,10 +1041,10 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 48,
-    height: 48,
+    width: 50,
+    height: 50,
     borderRadius: 15,
-    backgroundColor: "#2563EB",
+    backgroundColor: "#7C3AED",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -795,76 +1062,116 @@ const styles = StyleSheet.create({
 
   charityName: {
     fontSize: 17,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#1E293B",
   },
 
   charityType: {
     marginTop: 4,
     color: "#2563EB",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
 
+  /* Verification */
   verifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#DCFCE7",
     paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 20,
   },
 
   verifiedBadgeText: {
     color: "#16A34A",
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 10,
+    fontWeight: "800",
+    marginLeft: 4,
   },
 
   unverifiedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#FEF3C7",
     paddingHorizontal: 9,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 20,
   },
 
   unverifiedBadgeText: {
     color: "#D97706",
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 10,
+    fontWeight: "800",
+    marginLeft: 4,
+  },
+
+  /* Location */
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 15,
+  },
+
+  locationIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 7,
   },
 
   location: {
-    marginTop: 15,
+    flex: 1,
     color: "#475569",
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+
+  distanceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+    marginLeft: 35,
   },
 
   distance: {
     color: "#94A3B8",
-    fontSize: 12,
-    marginTop: 5,
+    fontSize: 11,
+    marginLeft: 5,
   },
 
+  /* Needs */
   needsContainer: {
     backgroundColor: "#F8FAFC",
-    borderRadius: 13,
+    borderRadius: 14,
     padding: 13,
     marginTop: 14,
+  },
+
+  needsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
   },
 
   needsLabel: {
     color: "#64748B",
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
+    marginLeft: 6,
   },
 
   needsText: {
     color: "#1E293B",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     lineHeight: 20,
-    marginTop: 4,
   },
 
+  /* Details */
   detailsContainer: {
     borderTopWidth: 1,
     borderTopColor: "#E2E8F0",
@@ -873,86 +1180,108 @@ const styles = StyleSheet.create({
   },
 
   detailSection: {
-    marginBottom: 13,
+    marginBottom: 14,
+  },
+
+  detailTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
   },
 
   detailTitle: {
     color: "#1E293B",
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
+    marginLeft: 6,
   },
 
   detailText: {
     color: "#64748B",
-    fontSize: 13,
-    lineHeight: 20,
-    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 19,
   },
 
   contactDetailRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 7,
-    paddingVertical: 3,
+    paddingVertical: 7,
   },
 
-  contactIcon: {
-    fontSize: 15,
+  contactIconContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#F8FAFC",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 9,
   },
 
   contactDetail: {
     flex: 1,
     color: "#475569",
-    fontSize: 13,
+    fontSize: 12,
   },
 
+  /* Details Button */
   detailsButton: {
     minHeight: 42,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 7,
   },
 
   detailsButtonText: {
     color: "#2563EB",
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "800",
   },
 
+  /* Action Buttons */
   buttonRow: {
     flexDirection: "row",
-    marginTop: 8,
+    marginTop: 7,
   },
 
   supportButton: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#2563EB",
     paddingVertical: 14,
     borderRadius: 12,
-    alignItems: "center",
-    marginRight: 8,
+    marginRight: 5,
   },
 
   supportText: {
     color: "#FFFFFF",
-    fontWeight: "700",
+    fontWeight: "800",
+    fontSize: 13,
+    marginLeft: 7,
   },
 
   contactButton: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#22C55E",
     paddingVertical: 14,
     borderRadius: 12,
-    alignItems: "center",
-    marginLeft: 8,
+    marginLeft: 5,
   },
 
   contactText: {
     color: "#FFFFFF",
-    fontWeight: "700",
+    fontWeight: "800",
+    fontSize: 13,
+    marginLeft: 7,
   },
 
+  /* Empty */
   emptyListContent: {
     flexGrow: 1,
   },
@@ -969,31 +1298,31 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: "#DCFCE7",
+    backgroundColor: "#F3E8FF",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
   },
 
-  emptyIcon: {
-    fontSize: 52,
-  },
-
   emptyTitle: {
     color: "#1E293B",
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: "800",
     textAlign: "center",
   },
 
   emptyText: {
     color: "#64748B",
     textAlign: "center",
-    lineHeight: 23,
+    lineHeight: 22,
     marginTop: 10,
+    fontSize: 13,
   },
 
   clearSearchButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#2563EB",
     borderRadius: 12,
     paddingHorizontal: 18,
@@ -1003,6 +1332,8 @@ const styles = StyleSheet.create({
 
   clearSearchText: {
     color: "#FFFFFF",
-    fontWeight: "700",
+    fontWeight: "800",
+    marginLeft: 6,
+    fontSize: 12,
   },
 });
