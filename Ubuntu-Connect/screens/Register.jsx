@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+
 import {
   ScrollView,
   View,
@@ -11,12 +12,15 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { createUserWithEmailAndPassword } from "firebase/auth";
+
 import { doc, setDoc } from "firebase/firestore";
+
 import { auth, db } from "../firebaseConfig";
 
 const Register = ({ navigation }) => {
@@ -27,10 +31,12 @@ const Register = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [role, setRole] = useState("Donor");
+
   const [loading, setLoading] = useState(false);
 
   const [hidePassword, setHidePassword] = useState(true);
-  const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
+  const [hideConfirmPassword, setHideConfirmPassword] =
+    useState(true);
 
   const [focusedField, setFocusedField] = useState("");
 
@@ -65,9 +71,12 @@ const Register = ({ navigation }) => {
     email.length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
-  const passwordLengthValid = password.length >= 6;
+  const passwordLengthValid =
+    password.length >= 6;
+
   const passwordsMatch =
-    confirmPassword.length > 0 && password === confirmPassword;
+    confirmPassword.length > 0 &&
+    password === confirmPassword;
 
   const getFirebaseErrorMessage = (error) => {
     switch (error.code) {
@@ -141,22 +150,26 @@ const Register = ({ navigation }) => {
     try {
       setLoading(true);
 
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
+      const userCredential =
+        await createUserWithEmailAndPassword(
+          auth,
+          email.trim(),
+          password
+        );
 
       const user = userCredential.user;
 
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        fullName: fullName.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        role: role,
-        createdAt: new Date(),
-      });
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          uid: user.uid,
+          fullName: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          role: role,
+          createdAt: new Date(),
+        }
+      );
 
       Alert.alert(
         "Welcome to Ubuntu Connect",
@@ -164,7 +177,8 @@ const Register = ({ navigation }) => {
         [
           {
             text: "Continue",
-            onPress: () => navigation.replace("MainTabs"),
+            onPress: () =>
+              navigation.replace("MainTabs"),
           },
         ]
       );
@@ -182,583 +196,741 @@ const Register = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={
+            styles.scrollContent
+          }
         >
-          {/* Header */}
+          {/* HEADER */}
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => navigation.goBack()}
+              disabled={loading}
+              activeOpacity={0.7}
             >
               <MaterialIcons
                 name="arrow-back"
-                size={22}
+                size={21}
                 color="#1E293B"
               />
             </TouchableOpacity>
 
-            <View style={styles.logo}>
-              <MaterialIcons
-                name="volunteer-activism"
-                size={27}
-                color="#FFFFFF"
-              />
+            <View style={styles.logoContainer}>
+              <View style={styles.logoCircle}>
+                <Text style={styles.logoBlue}>
+                  U
+                </Text>
+
+                <Text style={styles.logoGreen}>
+                  C
+                </Text>
+              </View>
+
+              <View style={styles.logoDot} />
             </View>
 
-            <Text style={styles.heading}>Create Account</Text>
+            <Text style={styles.heading}>
+              Create Your Account
+            </Text>
 
             <Text style={styles.subtitle}>
-              Join Ubuntu Connect and become part of a community that helps
-              people make a difference.
+              Join Ubuntu Connect and become part
+              of a community that helps people make
+              a difference.
             </Text>
           </View>
 
-          {/* Welcome Card */}
-          <View style={styles.welcomeCard}>
-            <View style={styles.welcomeIcon}>
-              <MaterialIcons
-                name="groups"
-                size={26}
-                color="#2563EB"
-              />
+          {/* FORM CARD */}
+          <View style={styles.formCard}>
+            {/* FORM HEADER */}
+            <View style={styles.formHeader}>
+              <View style={styles.formHeaderIcon}>
+                <MaterialIcons
+                  name="person-add"
+                  size={21}
+                  color="#22C55E"
+                />
+              </View>
+
+              <View style={styles.formHeaderText}>
+                <Text style={styles.formTitle}>
+                  Create account
+                </Text>
+
+                <Text style={styles.formSubtitle}>
+                  Enter your details below to get started.
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.welcomeContent}>
-              <Text style={styles.welcomeTitle}>
-                Welcome to Ubuntu Connect
-              </Text>
-
-              <Text style={styles.welcomeText}>
-                Connect with donors, recipients, volunteers and NGOs to
-                create meaningful impact together.
-              </Text>
-            </View>
-          </View>
-
-          {/* Account Information */}
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionIcon}>
-              <MaterialIcons
-                name="person-outline"
-                size={20}
-                color="#2563EB"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.sectionTitle}>
-                Your Information
-              </Text>
-
-              <Text style={styles.sectionSubtitle}>
-                Tell us a little about yourself
-              </Text>
-            </View>
-          </View>
-
-          {/* Full Name */}
-          <Text style={styles.label}>Full Name</Text>
-
-          <View
-            style={[
-              styles.inputWrapper,
-              focusedField === "fullName" && styles.inputFocused,
-            ]}
-          >
-            <MaterialIcons
-              name="person"
-              size={21}
-              color={
-                focusedField === "fullName"
-                  ? "#2563EB"
-                  : "#94A3B8"
-              }
-            />
-
-            <TextInput
-              placeholder="Enter your full name"
-              placeholderTextColor="#94A3B8"
-              value={fullName}
-              onChangeText={setFullName}
-              style={styles.input}
-              onFocus={() => setFocusedField("fullName")}
-              onBlur={() => setFocusedField("")}
-              autoCapitalize="words"
-            />
-
-            {fullName.trim().length >= 2 && (
-              <MaterialIcons
-                name="check-circle"
-                size={20}
-                color="#22C55E"
-              />
-            )}
-          </View>
-
-          {/* Email */}
-          <Text style={styles.label}>Email Address</Text>
-
-          <View
-            style={[
-              styles.inputWrapper,
-              focusedField === "email" && styles.inputFocused,
-              email.length > 0 &&
-                !isEmailValid &&
-                styles.inputError,
-            ]}
-          >
-            <MaterialIcons
-              name="email"
-              size={21}
-              color={
-                focusedField === "email"
-                  ? "#2563EB"
-                  : "#94A3B8"
-              }
-            />
-
-            <TextInput
-              placeholder="Enter your email"
-              placeholderTextColor="#94A3B8"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={styles.input}
-              onFocus={() => setFocusedField("email")}
-              onBlur={() => setFocusedField("")}
-            />
-
-            {isEmailValid && (
-              <MaterialIcons
-                name="check-circle"
-                size={20}
-                color="#22C55E"
-              />
-            )}
-          </View>
-
-          {email.length > 0 && !isEmailValid && (
-            <Text style={styles.helperError}>
-              Please enter a valid email address.
+            {/* FULL NAME */}
+            <Text style={styles.label}>
+              Full Name
             </Text>
-          )}
 
-          {/* Phone */}
-          <Text style={styles.label}>Phone Number</Text>
-
-          <View
-            style={[
-              styles.inputWrapper,
-              focusedField === "phone" && styles.inputFocused,
-            ]}
-          >
-            <MaterialIcons
-              name="phone"
-              size={21}
-              color={
-                focusedField === "phone"
-                  ? "#2563EB"
-                  : "#94A3B8"
-              }
-            />
-
-            <TextInput
-              placeholder="Enter your phone number"
-              placeholderTextColor="#94A3B8"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              style={styles.input}
-              onFocus={() => setFocusedField("phone")}
-              onBlur={() => setFocusedField("")}
-            />
-
-            {phone.trim().length >= 7 && (
-              <MaterialIcons
-                name="check-circle"
-                size={20}
-                color="#22C55E"
-              />
-            )}
-          </View>
-
-          {/* Password Section */}
-          <View style={styles.passwordSectionHeader}>
-            <View>
-              <Text style={styles.label}>Password</Text>
-            </View>
-
-            {password.length > 0 && (
-              <Text
-                style={[
-                  styles.passwordStatus,
-                  passwordLengthValid
-                    ? styles.passwordGood
-                    : styles.passwordWeak,
-                ]}
-              >
-                {passwordLengthValid
-                  ? "Looks good"
-                  : "Too short"}
-              </Text>
-            )}
-          </View>
-
-          <View
-            style={[
-              styles.inputWrapper,
-              focusedField === "password" && styles.inputFocused,
-            ]}
-          >
-            <MaterialIcons
-              name="lock"
-              size={21}
-              color={
-                focusedField === "password"
-                  ? "#2563EB"
-                  : "#94A3B8"
-              }
-            />
-
-            <TextInput
-              placeholder="Create a password"
-              placeholderTextColor="#94A3B8"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={hidePassword}
-              style={styles.input}
-              onFocus={() => setFocusedField("password")}
-              onBlur={() => setFocusedField("")}
-            />
-
-            <TouchableOpacity
-              onPress={() => setHidePassword(!hidePassword)}
-              style={styles.eyeButton}
-            >
-              <MaterialIcons
-                name={
-                  hidePassword
-                    ? "visibility"
-                    : "visibility-off"
-                }
-                size={21}
-                color="#64748B"
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Password requirement */}
-          <View style={styles.requirementRow}>
-            <MaterialIcons
-              name={
-                passwordLengthValid
-                  ? "check-circle"
-                  : "radio-button-unchecked"
-              }
-              size={17}
-              color={
-                passwordLengthValid
-                  ? "#22C55E"
-                  : "#94A3B8"
-              }
-            />
-
-            <Text
+            <View
               style={[
-                styles.requirementText,
-                passwordLengthValid &&
-                  styles.requirementTextGood,
+                styles.inputContainer,
+                focusedField === "fullName" &&
+                  styles.inputFocused,
               ]}
             >
-              At least 6 characters
+              <View
+                style={[
+                  styles.inputIconContainer,
+                  focusedField === "fullName" &&
+                    styles.inputIconFocused,
+                ]}
+              >
+                <MaterialIcons
+                  name="person"
+                  size={20}
+                  color={
+                    focusedField === "fullName"
+                      ? "#2563EB"
+                      : "#64748B"
+                  }
+                />
+              </View>
+
+              <TextInput
+                placeholder="Enter your full name"
+                placeholderTextColor="#94A3B8"
+                value={fullName}
+                onChangeText={setFullName}
+                style={styles.input}
+                onFocus={() =>
+                  setFocusedField("fullName")
+                }
+                onBlur={() =>
+                  setFocusedField("")
+                }
+                autoCapitalize="words"
+                autoCorrect={false}
+                editable={!loading}
+                returnKeyType="next"
+              />
+
+              {fullName.trim().length >= 2 && (
+                <MaterialIcons
+                  name="check-circle"
+                  size={18}
+                  color="#22C55E"
+                />
+              )}
+            </View>
+
+            {/* EMAIL */}
+            <Text style={styles.label}>
+              Email address
             </Text>
-          </View>
 
-          {/* Confirm Password */}
-          <Text style={styles.label}>Confirm Password</Text>
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === "email" &&
+                  styles.inputFocused,
+                email.length > 0 &&
+                  !isEmailValid &&
+                  styles.inputError,
+              ]}
+            >
+              <View
+                style={[
+                  styles.inputIconContainer,
+                  focusedField === "email" &&
+                    styles.inputIconFocused,
+                ]}
+              >
+                <MaterialIcons
+                  name="email"
+                  size={20}
+                  color={
+                    focusedField === "email"
+                      ? "#2563EB"
+                      : "#64748B"
+                  }
+                />
+              </View>
 
-          <View
-            style={[
-              styles.inputWrapper,
-              focusedField === "confirmPassword" &&
-                styles.inputFocused,
-              confirmPassword.length > 0 &&
-                password !== confirmPassword &&
-                styles.inputError,
-            ]}
-          >
-            <MaterialIcons
-              name="lock-outline"
-              size={21}
-              color={
-                focusedField === "confirmPassword"
-                  ? "#2563EB"
-                  : "#94A3B8"
-              }
-            />
+              <TextInput
+                placeholder="Enter your email"
+                placeholderTextColor="#94A3B8"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.input}
+                onFocus={() =>
+                  setFocusedField("email")
+                }
+                onBlur={() =>
+                  setFocusedField("")
+                }
+                editable={!loading}
+                returnKeyType="next"
+              />
 
-            <TextInput
-              placeholder="Confirm your password"
-              placeholderTextColor="#94A3B8"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={hideConfirmPassword}
-              style={styles.input}
-              onFocus={() =>
-                setFocusedField("confirmPassword")
-              }
-              onBlur={() => setFocusedField("")}
-            />
+              {email.length > 0 && (
+                <MaterialIcons
+                  name={
+                    isEmailValid
+                      ? "check-circle"
+                      : "info-outline"
+                  }
+                  size={18}
+                  color={
+                    isEmailValid
+                      ? "#22C55E"
+                      : "#94A3B8"
+                  }
+                />
+              )}
+            </View>
 
-            <TouchableOpacity
-              onPress={() =>
-                setHideConfirmPassword(
-                  !hideConfirmPassword
-                )
-              }
-              style={styles.eyeButton}
+            {email.length > 0 &&
+              !isEmailValid && (
+                <Text style={styles.helperError}>
+                  Please enter a valid email address.
+                </Text>
+              )}
+
+            {/* PHONE */}
+            <Text style={styles.label}>
+              Phone Number
+            </Text>
+
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === "phone" &&
+                  styles.inputFocused,
+              ]}
+            >
+              <View
+                style={[
+                  styles.inputIconContainer,
+                  focusedField === "phone" &&
+                    styles.inputIconFocused,
+                ]}
+              >
+                <MaterialIcons
+                  name="phone"
+                  size={20}
+                  color={
+                    focusedField === "phone"
+                      ? "#2563EB"
+                      : "#64748B"
+                  }
+                />
+              </View>
+
+              <TextInput
+                placeholder="Enter your phone number"
+                placeholderTextColor="#94A3B8"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                style={styles.input}
+                onFocus={() =>
+                  setFocusedField("phone")
+                }
+                onBlur={() =>
+                  setFocusedField("")
+                }
+                editable={!loading}
+                returnKeyType="next"
+              />
+
+              {phone.trim().length >= 7 && (
+                <MaterialIcons
+                  name="check-circle"
+                  size={18}
+                  color="#22C55E"
+                />
+              )}
+            </View>
+
+            {/* PASSWORD */}
+            <View
+              style={styles.passwordHeader}
+            >
+              <Text style={styles.label}>
+                Password
+              </Text>
+
+              {password.length > 0 && (
+                <Text
+                  style={[
+                    styles.passwordStatus,
+                    passwordLengthValid
+                      ? styles.passwordGood
+                      : styles.passwordWeak,
+                  ]}
+                >
+                  {passwordLengthValid
+                    ? "Looks good"
+                    : "Too short"}
+                </Text>
+              )}
+            </View>
+
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField === "password" &&
+                  styles.inputFocused,
+              ]}
+            >
+              <View
+                style={[
+                  styles.inputIconContainer,
+                  focusedField === "password" &&
+                    styles.inputIconFocused,
+                ]}
+              >
+                <MaterialIcons
+                  name="lock-outline"
+                  size={20}
+                  color={
+                    focusedField === "password"
+                      ? "#2563EB"
+                      : "#64748B"
+                  }
+                />
+              </View>
+
+              <TextInput
+                placeholder="Create a password"
+                placeholderTextColor="#94A3B8"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={hidePassword}
+                style={styles.input}
+                onFocus={() =>
+                  setFocusedField("password")
+                }
+                onBlur={() =>
+                  setFocusedField("")
+                }
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!loading}
+                returnKeyType="next"
+              />
+
+              <TouchableOpacity
+                onPress={() =>
+                  setHidePassword(
+                    (current) => !current
+                  )
+                }
+                style={styles.visibilityButton}
+                disabled={loading}
+              >
+                <MaterialIcons
+                  name={
+                    hidePassword
+                      ? "visibility"
+                      : "visibility-off"
+                  }
+                  size={20}
+                  color="#64748B"
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* PASSWORD REQUIREMENT */}
+            <View
+              style={styles.requirementRow}
             >
               <MaterialIcons
                 name={
-                  hideConfirmPassword
-                    ? "visibility"
-                    : "visibility-off"
-                }
-                size={21}
-                color="#64748B"
-              />
-            </TouchableOpacity>
-          </View>
-
-          {confirmPassword.length > 0 && (
-            <View style={styles.requirementRow}>
-              <MaterialIcons
-                name={
-                  passwordsMatch
+                  passwordLengthValid
                     ? "check-circle"
-                    : "error-outline"
+                    : "radio-button-unchecked"
                 }
                 size={17}
                 color={
-                  passwordsMatch
+                  passwordLengthValid
                     ? "#22C55E"
-                    : "#EF4444"
+                    : "#94A3B8"
                 }
               />
 
               <Text
                 style={[
                   styles.requirementText,
-                  passwordsMatch
-                    ? styles.requirementTextGood
-                    : styles.requirementTextError,
+                  passwordLengthValid &&
+                    styles.requirementTextGood,
                 ]}
               >
-                {passwordsMatch
-                  ? "Passwords match"
-                  : "Passwords do not match"}
+                At least 6 characters
               </Text>
             </View>
-          )}
 
-          {/* Role */}
-          <View style={styles.roleHeader}>
-            <View style={styles.sectionIcon}>
-              <MaterialIcons
-                name="badge"
-                size={20}
-                color="#7C3AED"
+            {/* CONFIRM PASSWORD */}
+            <Text style={styles.label}>
+              Confirm Password
+            </Text>
+
+            <View
+              style={[
+                styles.inputContainer,
+                focusedField ===
+                  "confirmPassword" &&
+                  styles.inputFocused,
+                confirmPassword.length > 0 &&
+                  password !== confirmPassword &&
+                  styles.inputError,
+              ]}
+            >
+              <View
+                style={[
+                  styles.inputIconContainer,
+                  focusedField ===
+                    "confirmPassword" &&
+                    styles.inputIconFocused,
+                ]}
+              >
+                <MaterialIcons
+                  name="lock"
+                  size={20}
+                  color={
+                    focusedField ===
+                    "confirmPassword"
+                      ? "#2563EB"
+                      : "#64748B"
+                  }
+                />
+              </View>
+
+              <TextInput
+                placeholder="Confirm your password"
+                placeholderTextColor="#94A3B8"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={
+                  hideConfirmPassword
+                }
+                style={styles.input}
+                onFocus={() =>
+                  setFocusedField(
+                    "confirmPassword"
+                  )
+                }
+                onBlur={() =>
+                  setFocusedField("")
+                }
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!loading}
+                returnKeyType="done"
+                onSubmitEditing={
+                  handleRegister
+                }
               />
+
+              <TouchableOpacity
+                onPress={() =>
+                  setHideConfirmPassword(
+                    (current) => !current
+                  )
+                }
+                style={styles.visibilityButton}
+                disabled={loading}
+              >
+                <MaterialIcons
+                  name={
+                    hideConfirmPassword
+                      ? "visibility"
+                      : "visibility-off"
+                  }
+                  size={20}
+                  color="#64748B"
+                />
+              </TouchableOpacity>
             </View>
 
-            <View>
-              <Text style={styles.sectionTitle}>
-                How are you joining?
-              </Text>
+            {confirmPassword.length > 0 && (
+              <View
+                style={styles.requirementRow}
+              >
+                <MaterialIcons
+                  name={
+                    passwordsMatch
+                      ? "check-circle"
+                      : "error-outline"
+                  }
+                  size={17}
+                  color={
+                    passwordsMatch
+                      ? "#22C55E"
+                      : "#EF4444"
+                  }
+                />
 
-              <Text style={styles.sectionSubtitle}>
-                Choose the role that best describes you
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.roleContainer}>
-            {roles.map((item) => {
-              const selected = role === item.name;
-
-              return (
-                <TouchableOpacity
-                  key={item.name}
-                  activeOpacity={0.8}
+                <Text
                   style={[
-                    styles.roleButton,
-                    selected && {
-                      borderColor: item.color,
-                      backgroundColor: `${item.color}10`,
-                    },
+                    styles.requirementText,
+                    passwordsMatch
+                      ? styles.requirementTextGood
+                      : styles.requirementTextError,
                   ]}
-                  onPress={() => setRole(item.name)}
                 >
-                  <View
+                  {passwordsMatch
+                    ? "Passwords match"
+                    : "Passwords do not match"}
+                </Text>
+              </View>
+            )}
+
+            {/* ROLE HEADER */}
+            <View style={styles.roleHeader}>
+              <View style={styles.roleHeaderIcon}>
+                <MaterialIcons
+                  name="badge"
+                  size={21}
+                  color="#7C3AED"
+                />
+              </View>
+
+              <View
+                style={styles.roleHeaderText}
+              >
+                <Text style={styles.formTitle}>
+                  How are you joining?
+                </Text>
+
+                <Text style={styles.formSubtitle}>
+                  Choose the role that best describes you.
+                </Text>
+              </View>
+            </View>
+
+            {/* ROLES */}
+            <View style={styles.roleContainer}>
+              {roles.map((item) => {
+                const selected =
+                  role === item.name;
+
+                return (
+                  <TouchableOpacity
+                    key={item.name}
+                    activeOpacity={0.8}
+                    disabled={loading}
                     style={[
-                      styles.roleIcon,
-                      {
-                        backgroundColor: selected
-                          ? `${item.color}18`
-                          : "#F8FAFC",
+                      styles.roleButton,
+                      selected && {
+                        borderColor:
+                          item.color,
+                        backgroundColor:
+                          `${item.color}10`,
                       },
                     ]}
+                    onPress={() =>
+                      setRole(item.name)
+                    }
                   >
-                    <MaterialIcons
-                      name={item.icon}
-                      size={23}
-                      color={
-                        selected
-                          ? item.color
-                          : "#64748B"
-                      }
-                    />
-                  </View>
-
-                  <View style={styles.roleInfo}>
-                    <Text
+                    <View
                       style={[
-                        styles.roleText,
-                        selected && {
-                          color: item.color,
+                        styles.roleIcon,
+                        {
+                          backgroundColor:
+                            selected
+                              ? `${item.color}18`
+                              : "#F8FAFC",
                         },
                       ]}
                     >
-                      {item.name}
-                    </Text>
+                      <MaterialIcons
+                        name={item.icon}
+                        size={22}
+                        color={
+                          selected
+                            ? item.color
+                            : "#64748B"
+                        }
+                      />
+                    </View>
 
-                    <Text style={styles.roleDescription}>
-                      {item.description}
-                    </Text>
-                  </View>
+                    <View
+                      style={styles.roleInfo}
+                    >
+                      <Text
+                        style={[
+                          styles.roleText,
+                          selected && {
+                            color: item.color,
+                          },
+                        ]}
+                      >
+                        {item.name}
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.roleDescription
+                        }
+                      >
+                        {item.description}
+                      </Text>
+                    </View>
+
+                    <MaterialIcons
+                      name={
+                        selected
+                          ? "radio-button-checked"
+                          : "radio-button-unchecked"
+                      }
+                      size={21}
+                      color={
+                        selected
+                          ? item.color
+                          : "#CBD5E1"
+                      }
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* SELECTED ROLE */}
+            <View
+              style={styles.selectedRoleCard}
+            >
+              <MaterialIcons
+                name="info-outline"
+                size={19}
+                color="#2563EB"
+              />
+
+              <Text
+                style={styles.selectedRoleText}
+              >
+                You're joining as{" "}
+                <Text
+                  style={styles.selectedRoleBold}
+                >
+                  {role}
+                </Text>
+                . You can use Ubuntu Connect
+                to connect with people and
+                contribute to your community.
+              </Text>
+            </View>
+
+            {/* CREATE ACCOUNT */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.registerButton,
+                loading &&
+                  styles.disabledButton,
+              ]}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <View
+                  style={styles.buttonContent}
+                >
+                  <ActivityIndicator
+                    size="small"
+                    color="#FFFFFF"
+                  />
+
+                  <Text
+                    style={styles.registerText}
+                  >
+                    Creating Account...
+                  </Text>
+                </View>
+              ) : (
+                <View
+                  style={styles.buttonContent}
+                >
+                  <MaterialIcons
+                    name="person-add"
+                    size={20}
+                    color="#FFFFFF"
+                  />
+
+                  <Text
+                    style={styles.registerText}
+                  >
+                    Create Account
+                  </Text>
 
                   <MaterialIcons
-                    name={
-                      selected
-                        ? "radio-button-checked"
-                        : "radio-button-unchecked"
-                    }
-                    size={21}
-                    color={
-                      selected
-                        ? item.color
-                        : "#CBD5E1"
-                    }
+                    name="arrow-forward"
+                    size={20}
+                    color="#FFFFFF"
                   />
-                </TouchableOpacity>
-              );
-            })}
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
 
-          {/* Selected Role Feedback */}
-          <View style={styles.selectedRoleCard}>
-            <MaterialIcons
-              name="info-outline"
-              size={20}
-              color="#2563EB"
-            />
-
-            <Text style={styles.selectedRoleText}>
-              You're joining as{" "}
-              <Text style={styles.selectedRoleBold}>
-                {role}
-              </Text>
-              . You can use Ubuntu Connect to connect with
-              people and contribute to your community.
-            </Text>
-          </View>
-
-          {/* Create Account */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={[
-              styles.registerButton,
-              loading && styles.disabledButton,
-            ]}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <ActivityIndicator
-                  size="small"
-                  color="#FFFFFF"
-                />
-
-                <Text style={styles.registerText}>
-                  Creating Account...
-                </Text>
-              </>
-            ) : (
-              <>
-                <MaterialIcons
-                  name="person-add"
-                  size={21}
-                  color="#FFFFFF"
-                />
-
-                <Text style={styles.registerText}>
-                  Create Account
-                </Text>
-
-                <MaterialIcons
-                  name="arrow-forward"
-                  size={21}
-                  color="#FFFFFF"
-                />
-              </>
-            )}
-          </TouchableOpacity>
-
-          {/* Security Note */}
+          {/* SECURITY */}
           <View style={styles.securityCard}>
-            <MaterialIcons
-              name="verified-user"
-              size={21}
-              color="#22C55E"
-            />
+            <View style={styles.securityIcon}>
+              <MaterialIcons
+                name="verified-user"
+                size={21}
+                color="#2563EB"
+              />
+            </View>
 
-            <View style={styles.securityContent}>
-              <Text style={styles.securityTitle}>
+            <View
+              style={styles.securityContent}
+            >
+              <Text
+                style={styles.securityTitle}
+              >
                 Your information is protected
               </Text>
 
-              <Text style={styles.securityText}>
-                Your account details are securely stored and
-                used to provide your Ubuntu Connect experience.
+              <Text
+                style={styles.securityText}
+              >
+                Your account details are securely
+                stored and protected by Firebase
+                Authentication.
               </Text>
             </View>
           </View>
 
-          {/* Login */}
+          {/* LOGIN FOOTER */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Already have an account?
             </Text>
 
             <TouchableOpacity
-              onPress={() => navigation.navigate("Login")}
+              onPress={() =>
+                navigation.navigate("Login")
+              }
               disabled={loading}
+              activeOpacity={0.7}
             >
               <Text style={styles.loginLink}>
-                {" "}Log in
+                Log in
               </Text>
             </TouchableOpacity>
           </View>
 
-          <View style={{ height: 35 }} />
+          <View style={{ height: 30 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -778,13 +950,15 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 20,
+    paddingHorizontal: 22,
+    paddingTop: 20,
+    paddingBottom: 40,
   },
+
+  /* HEADER */
 
   header: {
     alignItems: "center",
-    paddingTop: 12,
     marginBottom: 22,
   },
 
@@ -796,127 +970,147 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    alignItems: "center",
     justifyContent: "center",
-    marginBottom: 22,
-  },
-
-  logo: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    backgroundColor: "#2563EB",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-    shadowColor: "#2563EB",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    elevation: 5,
+    marginBottom: 20,
   },
 
-  heading: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: "#1E293B",
-    textAlign: "center",
+  logoContainer: {
+    position: "relative",
+    marginBottom: 17,
   },
 
-  subtitle: {
-    fontSize: 14,
-    color: "#64748B",
-    textAlign: "center",
-    lineHeight: 21,
-    marginTop: 8,
-    maxWidth: 340,
-  },
-
-  welcomeCard: {
-    flexDirection: "row",
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1,
-    borderColor: "#DBEAFE",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 25,
-  },
-
-  welcomeIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 13,
-  },
-
-  welcomeContent: {
-    flex: 1,
-  },
-
-  welcomeTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#2563EB",
-    marginBottom: 5,
-  },
-
-  welcomeText: {
-    fontSize: 13,
-    color: "#475569",
-    lineHeight: 19,
-  },
-
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 3,
-  },
-
-  sectionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "#EFF6FF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 11,
-  },
-
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#1E293B",
-  },
-
-  sectionSubtitle: {
-    fontSize: 12,
-    color: "#64748B",
-    marginTop: 2,
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#334155",
-    marginBottom: 8,
-    marginTop: 16,
-  },
-
-  inputWrapper: {
-    minHeight: 56,
-    flexDirection: "row",
-    alignItems: "center",
+  logoCircle: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  logoBlue: {
+    fontSize: 39,
+    fontWeight: "900",
+    color: "#2563EB",
+  },
+
+  logoGreen: {
+    fontSize: 39,
+    fontWeight: "900",
+    color: "#22C55E",
+  },
+
+  logoDot: {
+    position: "absolute",
+    right: 2,
+    bottom: 5,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: "#22C55E",
+    borderWidth: 3,
+    borderColor: "#F8FAFC",
+  },
+
+  heading: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#1E293B",
+    textAlign: "center",
+    marginBottom: 7,
+  },
+
+  subtitle: {
+    maxWidth: 335,
+    fontSize: 13,
+    color: "#64748B",
+    textAlign: "center",
+    lineHeight: 19,
+  },
+
+  /* FORM CARD */
+
+  formCard: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 23,
+    padding: 20,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 9,
+    elevation: 3,
+  },
+
+  formHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 21,
+  },
+
+  formHeaderIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 13,
+    backgroundColor: "#F0FDF4",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
+  },
+
+  formHeaderText: {
+    flex: 1,
+  },
+
+  formTitle: {
+    color: "#1E293B",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
+  formSubtitle: {
+    color: "#94A3B8",
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  /* LABELS */
+
+  label: {
+    color: "#1E293B",
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+
+  /* INPUT */
+
+  inputContainer: {
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
     borderRadius: 15,
-    paddingHorizontal: 15,
+    marginBottom: 17,
+    paddingRight: 10,
   },
 
   inputFocused: {
@@ -928,35 +1122,56 @@ const styles = StyleSheet.create({
     borderColor: "#EF4444",
   },
 
-  input: {
-    flex: 1,
-    height: 54,
-    paddingHorizontal: 11,
-    fontSize: 15,
-    color: "#1E293B",
+  inputIconContainer: {
+    width: 39,
+    height: 39,
+    borderRadius: 11,
+    backgroundColor: "#E2E8F0",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 7,
+    marginRight: 5,
   },
 
-  eyeButton: {
-    padding: 5,
+  inputIconFocused: {
+    backgroundColor: "#EFF6FF",
+  },
+
+  input: {
+    flex: 1,
+    minHeight: 54,
+    color: "#1E293B",
+    fontSize: 14,
+    paddingHorizontal: 9,
+  },
+
+  visibilityButton: {
+    width: 38,
+    height: 45,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   helperError: {
     color: "#EF4444",
-    fontSize: 12,
-    marginTop: 6,
+    fontSize: 11,
+    marginTop: -10,
+    marginBottom: 9,
     marginLeft: 3,
   },
 
-  passwordSectionHeader: {
+  /* PASSWORD */
+
+  passwordHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
 
   passwordStatus: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "700",
-    marginTop: 16,
+    marginTop: 1,
     marginBottom: 8,
   },
 
@@ -971,12 +1186,13 @@ const styles = StyleSheet.create({
   requirementRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 7,
+    marginTop: -7,
+    marginBottom: 10,
     marginLeft: 3,
   },
 
   requirementText: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#94A3B8",
     marginLeft: 6,
   },
@@ -989,11 +1205,27 @@ const styles = StyleSheet.create({
     color: "#EF4444",
   },
 
+  /* ROLE */
+
   roleHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 28,
-    marginBottom: 12,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+
+  roleHeaderIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 13,
+    backgroundColor: "#F5F3FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
+  },
+
+  roleHeaderText: {
+    flex: 1,
   },
 
   roleContainer: {
@@ -1001,23 +1233,23 @@ const styles = StyleSheet.create({
   },
 
   roleButton: {
-    minHeight: 76,
+    minHeight: 72,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 15,
+    padding: 11,
   },
 
   roleIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 43,
+    height: 43,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: 11,
   },
 
   roleInfo: {
@@ -1026,22 +1258,22 @@ const styles = StyleSheet.create({
 
   roleText: {
     color: "#334155",
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "800",
   },
 
   roleDescription: {
     color: "#64748B",
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 3,
   },
 
   selectedRoleCard: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: "#EFF6FF",
     borderWidth: 1,
-    borderColor: "#DCFCE7",
+    borderColor: "#DBEAFE",
     borderRadius: 14,
     padding: 13,
     marginTop: 14,
@@ -1050,89 +1282,110 @@ const styles = StyleSheet.create({
   selectedRoleText: {
     flex: 1,
     color: "#475569",
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     marginLeft: 9,
   },
 
   selectedRoleBold: {
-    color: "#166534",
+    color: "#1E40AF",
     fontWeight: "800",
   },
 
+  /* REGISTER BUTTON */
+
   registerButton: {
-    minHeight: 58,
+    minHeight: 57,
     backgroundColor: "#22C55E",
-    borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
+    borderRadius: 15,
     justifyContent: "center",
-    gap: 9,
-    marginTop: 22,
+    alignItems: "center",
+    marginTop: 20,
     shadowColor: "#22C55E",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    elevation: 4,
+    shadowOpacity: 0.18,
+    shadowRadius: 7,
+    elevation: 3,
   },
 
   disabledButton: {
-    opacity: 0.7,
+    opacity: 0.65,
+  },
+
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   registerText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
+    marginHorizontal: 8,
   },
+
+  /* SECURITY */
 
   securityCard: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    borderRadius: 15,
+    borderColor: "#DBEAFE",
+    borderRadius: 17,
     padding: 14,
-    marginTop: 16,
+    marginTop: 15,
+  },
+
+  securityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#DBEAFE",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 11,
   },
 
   securityContent: {
     flex: 1,
-    marginLeft: 10,
   },
 
   securityTitle: {
-    color: "#334155",
-    fontSize: 13,
+    color: "#1E40AF",
+    fontSize: 12,
     fontWeight: "800",
-    marginBottom: 3,
   },
 
   securityText: {
-    color: "#64748B",
-    fontSize: 11,
-    lineHeight: 17,
+    color: "#3B82F6",
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 3,
   },
+
+  /* FOOTER */
 
   footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 24,
+    marginTop: 22,
   },
 
   footerText: {
     color: "#64748B",
-    fontSize: 14,
+    fontSize: 13,
   },
 
   loginLink: {
-    color: "#2563EB",
-    fontSize: 14,
+    color: "#22C55E",
     fontWeight: "800",
+    fontSize: 13,
+    marginLeft: 5,
   },
 });
