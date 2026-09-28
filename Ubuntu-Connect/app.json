@@ -5,13 +5,13 @@
     "scheme": "ubuntuconnect",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/ChatGPT Image Sep 28, 2026, 05_53_57 PM.png",
     "userInterfaceStyle": "light",
 
     "android": {
       "package": "com.sabelo073.ubuntuconnect",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/ChatGPT Image Sep 28, 2026, 05_53_57 PM.png",
         "backgroundColor": "#ffffff"
       }
     },
@@ -22,7 +22,7 @@
     },
 
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./ChatGPT Image Sep 28, 2026, 05_53_57 PM.png"
     },
 
     "extra": {
@@ -35,5 +35,5 @@
       "expo-web-browser"
     ]
   }
-  
+
 }

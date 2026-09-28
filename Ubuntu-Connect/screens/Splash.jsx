@@ -53,7 +53,7 @@ const Splash = ({ navigation }) => {
 
     const timer = setTimeout(() => {
       navigation.replace("Login");
-    }, 10000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -75,13 +75,13 @@ const Splash = ({ navigation }) => {
         ]}
       >
         <ImageBackground
-          source={{
-            uri:
-              "https://images.pexels.com/photos/7156178/pexels-photo-7156178.jpeg?cs=srgb&dl=pexels-gustavo-fring-7156178.jpg&fm=jpg",
-          }}
-          style={styles.heroImage}
-          resizeMode="cover"
-        >
+  source={require("../assets/splash-icon.jpg")}
+  style={{
+    width: "100%",
+    height: 250,
+  }}
+  resizeMode="cover"
+>
           {/* Dark overlay */}
           <View style={styles.imageOverlay} />
 
