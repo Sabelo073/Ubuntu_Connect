@@ -3,6 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // =========================================================
+    // HELPER FUNCTIONS
+    // =========================================================
+
     function isSignedIn() {
       return request.auth != null;
     }
@@ -31,30 +35,77 @@ service cloud.firestore {
         ).data.participantIds;
     }
 
-  match /users/{userId} {
-  allow read: if isSignedIn();
 
-  allow create: if isSignedIn()
-    && request.auth.uid == userId;
+    // =========================================================
+    // USERS
+    // =========================================================
 
-  allow update: if isSignedIn()
-    && request.auth.uid == userId
-    && request.resource.data.role
-      == resource.data.role;
+    match /users/{userId} {
 
-  allow delete: if isSignedIn()
-    && (
-      request.auth.uid == userId
-      || isAdmin()
-    );
-}
+      // Logged-in users can view users
+      allow read: if isSignedIn();
 
+      // A user can create their own account
+      allow create: if isSignedIn()
+        && request.auth.uid == userId;
+
+      // User can update their own account
+      // Admin can update any user
+      allow update: if isSignedIn()
+        && (
+          (
+            request.auth.uid == userId
+            && request.resource.data.role
+              == resource.data.role
+          )
+          || isAdmin()
+        );
+
+      // User or Admin can delete
+      allow delete: if isSignedIn()
+        && (
+          request.auth.uid == userId
+          || isAdmin()
+        );
+    }
+
+
+    // =========================================================
+    // REPORTS
+    // =========================================================
+
+    match /reports/{reportId} {
+
+      // Admin can view all reports
+      allow read: if isAdmin();
+
+      // Logged-in users can submit reports
+      allow create: if isSignedIn()
+        && request.resource.data.reporterId
+          == request.auth.uid
+        && request.resource.data.reportedUserId is string
+        && request.resource.data.reason is string
+        && request.resource.data.status == "pending";
+
+      // Only Admin can update reports
+      allow update: if isAdmin();
+
+      // Only Admin can delete reports
+      allow delete: if isAdmin();
+    }
+
+
+    // =========================================================
+    // DONATIONS
+    // =========================================================
 
     match /donations/{donationId} {
+
       allow read: if isSignedIn();
 
       allow create: if isSignedIn()
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId
+          == request.auth.uid;
 
       allow update: if isSignedIn()
         && (
@@ -64,12 +115,19 @@ service cloud.firestore {
 
       allow delete: if isAdmin();
     }
+
+
+    // =========================================================
+    // REQUESTS
+    // =========================================================
 
     match /requests/{requestId} {
+
       allow read: if isSignedIn();
 
       allow create: if isSignedIn()
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId
+          == request.auth.uid;
 
       allow update: if isSignedIn()
         && (
@@ -80,14 +138,22 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+
+    // =========================================================
+    // NOTIFICATIONS
+    // =========================================================
+
     match /notifications/{notificationId} {
+
       allow read: if isSignedIn()
         && resource.data.userId == request.auth.uid;
 
       allow create: if isSignedIn()
         && (
           isAdmin()
+
           ||
+
           (
             request.resource.data.type == "message"
             && request.resource.data.senderId == request.auth.uid
@@ -106,96 +172,116 @@ service cloud.firestore {
 
       allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == resource.data.userId;
+        && request.resource.data.userId
+          == resource.data.userId;
 
       allow delete: if isSignedIn()
         && resource.data.userId == request.auth.uid;
     }
+
+
+    // =========================================================
+    // CAMPAIGNS
+    // =========================================================
+
     match /campaigns/{campaignId} {
-  // Any logged-in user may view campaigns
-  allow read: if isSignedIn();
 
-  // Only admins may create campaigns
-  allow create: if isAdmin()
-    && request.resource.data.createdBy == request.auth.uid
-    && request.resource.data.title is string
-    && request.resource.data.description is string
-    && request.resource.data.organization is string
-    && request.resource.data.location is string
-    && request.resource.data.campaignType in ["Items", "Money"]
-    && request.resource.data.status == "Active"
-    && request.resource.data.urgent is bool;
+      allow read: if isSignedIn();
 
-  // Only admins may update campaigns
-  allow update: if isAdmin()
-    && request.resource.data.createdBy
-      == resource.data.createdBy;
+      allow create: if isAdmin()
+        && request.resource.data.createdBy
+          == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.description is string
+        && request.resource.data.organization is string
+        && request.resource.data.location is string
+        && request.resource.data.campaignType in ["Items", "Money"]
+        && request.resource.data.status == "Active"
+        && request.resource.data.urgent is bool;
 
-  // Only admins may delete campaigns
-  allow delete: if isAdmin();
-}
-match /charities/{charityId} {
-  allow read: if isSignedIn();
+      allow update: if isAdmin()
+        && request.resource.data.createdBy
+          == resource.data.createdBy;
 
-  allow create: if isAdmin()
-    && request.resource.data.createdBy
-      == request.auth.uid
-    && request.resource.data.name is string
-    && request.resource.data.type is string
-    && request.resource.data.description is string
-    && request.resource.data.location is string
-    && request.resource.data.address is string
-    && request.resource.data.needs is list
-    && request.resource.data.services is list
-    && request.resource.data.verified is bool;
+      allow delete: if isAdmin();
+    }
 
-  allow update: if isAdmin()
-    && request.resource.data.createdBy
-      == resource.data.createdBy;
 
-  allow delete: if isAdmin();
-}
-match /sessions/{sessionId} {
-  allow create: if isSignedIn()
-    && request.resource.data.userId
-      == request.auth.uid;
+    // =========================================================
+    // CHARITIES
+    // =========================================================
 
-  allow read: if isSignedIn()
-    && (
-      resource.data.userId
-        == request.auth.uid
-      || isAdmin()
-    );
+    match /charities/{charityId} {
 
-  allow update: if isSignedIn()
-    && resource.data.userId
-      == request.auth.uid
-    && request.resource.data.userId
-      == resource.data.userId;
+      allow read: if isSignedIn();
 
-  allow delete: if isAdmin();
-}
-match /auditLogs/{logId} {
-  allow create: if isSignedIn()
-    && request.resource.data.actorId
-      == request.auth.uid;
+      allow create: if isAdmin()
+        && request.resource.data.createdBy
+          == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.type is string
+        && request.resource.data.description is string
+        && request.resource.data.location is string
+        && request.resource.data.address is string
+        && request.resource.data.needs is list
+        && request.resource.data.services is list
+        && request.resource.data.verified is bool;
 
-  allow read: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.createdBy
+          == resource.data.createdBy;
 
-  allow update, delete: if false;
-}
+      allow delete: if isAdmin();
+    }
 
-match /auditLogs/{logId} {
-  allow create: if isSignedIn()
-    && request.resource.data.actorId
-      == request.auth.uid;
 
-  allow read: if isAdmin();
+    // =========================================================
+    // SESSIONS
+    // =========================================================
 
-  allow update, delete: if false;
-}
+    match /sessions/{sessionId} {
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId
+          == request.auth.uid;
+
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isAdmin()
+        );
+
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId
+          == resource.data.userId;
+
+      allow delete: if isAdmin();
+    }
+
+
+    // =========================================================
+    // AUDIT LOGS
+    // =========================================================
+
+    match /auditLogs/{logId} {
+
+      allow create: if isSignedIn()
+        && request.resource.data.actorId
+          == request.auth.uid;
+
+      allow read: if isAdmin();
+
+      allow update, delete: if false;
+    }
+
+
+    // =========================================================
+    // CHATS
+    // =========================================================
 
     match /chats/{chatId} {
+
       allow create: if isSignedIn()
         && request.resource.data.participantIds is list
         && request.resource.data.participantIds.size() == 2
@@ -211,35 +297,48 @@ match /auditLogs/{logId} {
 
       allow delete: if isAdmin();
 
+
+      // =======================================================
+      // CHAT MESSAGES
+      // =======================================================
+
       match /messages/{messageId} {
+
         allow read: if isChatParticipant(chatId);
 
         allow create: if isChatParticipant(chatId)
-          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.senderId
+            == request.auth.uid
+
           && request.resource.data.receiverId is string
+
           && request.resource.data.receiverId
             != request.auth.uid
+
           && request.resource.data.receiverId in get(
             /databases/$(database)/documents/chats/$(chatId)
           ).data.participantIds
+
           && request.resource.data.text is string
+
           && request.resource.data.text.size() > 0
+
           && request.resource.data.text.size() <= 1000
+
           && request.resource.data.read == false;
 
         allow update: if isChatParticipant(chatId)
 
-          // Only the receiver can mark the message as read
-          && resource.data.receiverId == request.auth.uid
+          && resource.data.receiverId
+            == request.auth.uid
 
-          // Only the read field may change
           && request.resource.data
             .diff(resource.data)
             .affectedKeys()
             .hasOnly(["read"])
 
-          // The read value must change from false to true
           && resource.data.read == false
+
           && request.resource.data.read == true;
 
         allow delete: if isAdmin();

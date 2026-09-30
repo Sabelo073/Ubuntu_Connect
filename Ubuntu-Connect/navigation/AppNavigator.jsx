@@ -32,6 +32,8 @@ import MyActivity from "../screens/MyActivity";
 import EditProfile from "../screens/EditProfile";
 import DeleteAccount from "../screens/DeleteAccount";
 import AuditLog from "../screens/AuditLog";
+import ReportUser from "../screens/ReportUser";
+import AdminReports from "../screens/AdminReports";
 
 import {
   SessionProvider,
@@ -123,6 +125,11 @@ function NavigationContent() {
         />
 
         <Stack.Screen
+          name="AdminReports"
+          component={AdminReports}
+        />
+
+        <Stack.Screen
           name="AuditLog"
           component={AuditLog}
         />
@@ -155,6 +162,11 @@ function NavigationContent() {
         <Stack.Screen
           name="DeleteAccount"
           component={DeleteAccount}
+        />
+
+        <Stack.Screen
+          name="ReportUser"
+          component={ReportUser}
         />
       </Stack.Navigator>
     </NavigationContainer>

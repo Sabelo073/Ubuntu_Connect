@@ -1365,132 +1365,167 @@ const AdminDashboard = ({ navigation }) => {
 
         {/* ================= QUICK ACTIONS ================= */}
 
-        <View style={styles.quickActionsCard}>
-          <View style={styles.quickActionsHeader}>
-            <View>
-              <Text style={styles.quickActionsTitle}>
-                Quick Actions
-              </Text>
+<View style={styles.quickActionsCard}>
 
-              <Text style={styles.quickActionsSubtitle}>
-                Create and manage platform resources
-              </Text>
-            </View>
+  <View style={styles.quickActionsHeader}>
+    <View>
+      <Text style={styles.quickActionsTitle}>
+        Quick Actions
+      </Text>
 
-            <MaterialIcons
-              name="dashboard-customize"
-              size={24}
-              color="#2563EB"
-            />
-          </View>
+      <Text style={styles.quickActionsSubtitle}>
+        Create and manage platform resources
+      </Text>
+    </View>
 
-          <View style={styles.quickActionGrid}>
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              onPress={() =>
-                navigation.navigate(
-                  "CreateCampaign"
-                )
-              }
-              activeOpacity={0.85}
-            >
-              <View
-                style={[
-                  styles.quickActionIcon,
-                  styles.blueIconContainer,
-                ]}
-              >
-                <MaterialIcons
-                  name="campaign"
-                  size={23}
-                  color="#2563EB"
-                />
-              </View>
+    <MaterialIcons
+      name="dashboard-customize"
+      size={24}
+      color="#2563EB"
+    />
+  </View>
 
-              <Text
-                style={styles.quickActionText}
-              >
-                New Campaign
-              </Text>
 
-              <MaterialIcons
-                name="arrow-forward"
-                size={18}
-                color="#94A3B8"
-              />
-            </TouchableOpacity>
+  <View style={styles.quickActionGrid}>
 
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              onPress={() =>
-                navigation.navigate(
-                  "CreateCharity"
-                )
-              }
-              activeOpacity={0.85}
-            >
-              <View
-                style={[
-                  styles.quickActionIcon,
-                  styles.greenIconContainer,
-                ]}
-              >
-                <MaterialIcons
-                  name="business"
-                  size={23}
-                  color="#16A34A"
-                />
-              </View>
+    {/* NEW CAMPAIGN */}
 
-              <Text
-                style={styles.quickActionText}
-              >
-                New Charity
-              </Text>
+    <TouchableOpacity
+      style={styles.quickActionButton}
+      onPress={() =>
+        navigation.navigate("CreateCampaign")
+      }
+      activeOpacity={0.85}
+    >
+      <View
+        style={[
+          styles.quickActionIcon,
+          styles.blueIconContainer,
+        ]}
+      >
+        <MaterialIcons
+          name="campaign"
+          size={23}
+          color="#2563EB"
+        />
+      </View>
 
-              <MaterialIcons
-                name="arrow-forward"
-                size={18}
-                color="#94A3B8"
-              />
-            </TouchableOpacity>
+      <Text style={styles.quickActionText}>
+        New Campaign
+      </Text>
 
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              onPress={() =>
-                navigation.navigate(
-                  "AuditLog"
-                )
-              }
-              activeOpacity={0.85}
-            >
-              <View
-                style={[
-                  styles.quickActionIcon,
-                  styles.purpleIconContainer,
-                ]}
-              >
-                <MaterialIcons
-                  name="fact-check"
-                  size={23}
-                  color="#7C3AED"
-                />
-              </View>
+      <MaterialIcons
+        name="arrow-forward"
+        size={18}
+        color="#94A3B8"
+      />
+    </TouchableOpacity>
 
-              <Text
-                style={styles.quickActionText}
-              >
-                Audit Logs
-              </Text>
 
-              <MaterialIcons
-                name="arrow-forward"
-                size={18}
-                color="#94A3B8"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+    {/* NEW CHARITY */}
+
+    <TouchableOpacity
+      style={styles.quickActionButton}
+      onPress={() =>
+        navigation.navigate("CreateCharity")
+      }
+      activeOpacity={0.85}
+    >
+      <View
+        style={[
+          styles.quickActionIcon,
+          styles.greenIconContainer,
+        ]}
+      >
+        <MaterialIcons
+          name="business"
+          size={23}
+          color="#16A34A"
+        />
+      </View>
+
+      <Text style={styles.quickActionText}>
+        New Charity
+      </Text>
+
+      <MaterialIcons
+        name="arrow-forward"
+        size={18}
+        color="#94A3B8"
+      />
+    </TouchableOpacity>
+
+
+    {/* AUDIT LOGS */}
+
+    <TouchableOpacity
+      style={styles.quickActionButton}
+      onPress={() =>
+        navigation.navigate("AuditLog")
+      }
+      activeOpacity={0.85}
+    >
+      <View
+        style={[
+          styles.quickActionIcon,
+          styles.purpleIconContainer,
+        ]}
+      >
+        <MaterialIcons
+          name="fact-check"
+          size={23}
+          color="#7C3AED"
+        />
+      </View>
+
+      <Text style={styles.quickActionText}>
+        Audit Logs
+      </Text>
+
+      <MaterialIcons
+        name="arrow-forward"
+        size={18}
+        color="#94A3B8"
+      />
+    </TouchableOpacity>
+
+
+    {/* USER REPORTS */}
+
+    <TouchableOpacity
+      style={styles.quickActionButton}
+      onPress={() =>
+        navigation.navigate("AdminReports")
+      }
+      activeOpacity={0.85}
+    >
+      <View
+        style={[
+          styles.quickActionIcon,
+          styles.redIconContainer,
+        ]}
+      >
+        <MaterialIcons
+          name="flag"
+          size={23}
+          color="#EF4444"
+        />
+      </View>
+
+      <Text style={styles.quickActionText}>
+        User Reports
+      </Text>
+
+      <MaterialIcons
+        name="arrow-forward"
+        size={18}
+        color="#94A3B8"
+      />
+    </TouchableOpacity>
+
+  </View>
+
+</View>
 
         {/* ================= CAMPAIGNS ================= */}
 

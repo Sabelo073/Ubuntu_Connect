@@ -20,6 +20,7 @@ import {
   sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithCredential,
+  signOut,
 } from "firebase/auth";
 
 import {
@@ -36,8 +37,9 @@ import * as WebBrowser from "expo-web-browser";
 import {
   useIdTokenAuthRequest,
 } from "expo-auth-session/providers/google";
+
 import {
-  makeRedirectUri
+  makeRedirectUri,
 } from "expo-auth-session";
 
 import { auth, db } from "../firebaseConfig";
@@ -52,6 +54,7 @@ const LogIn = ({ navigation }) => {
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+
   const [googleLoading, setGoogleLoading] =
     useState(false);
 
@@ -70,18 +73,21 @@ const LogIn = ({ navigation }) => {
   /*
    * GOOGLE AUTH REQUEST
    */
- const [request, response, promptAsync] =
-  useIdTokenAuthRequest({
-    clientId: GOOGLE_WEB_CLIENT_ID,
-    redirectUri: makeRedirectUri({
-      scheme: "ubuntuconnect",
-      path: "oauth",
-    }),
-  });
+
+  const [request, response, promptAsync] =
+    useIdTokenAuthRequest({
+      clientId: GOOGLE_WEB_CLIENT_ID,
+
+      redirectUri: makeRedirectUri({
+        scheme: "ubuntuconnect",
+        path: "oauth",
+      }),
+    });
 
   /*
    * MESSAGE
    */
+
   const showMessage = (title, message) => {
     if (
       Platform.OS === "web" &&
@@ -94,8 +100,69 @@ const LogIn = ({ navigation }) => {
   };
 
   /*
+   * CHECK ACCOUNT STATUS
+   *
+   * Missing status = active
+   *
+   * suspended = cannot enter app
+   * archived = cannot enter app
+   * active = allowed to continue
+   */
+
+  const checkAccountStatus = async (user) => {
+    const userRef = doc(
+      db,
+      "users",
+      user.uid
+    );
+
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      await signOut(auth);
+
+      showMessage(
+        "Profile Not Found",
+        "Your account exists, but your profile was not found in Ubuntu Connect."
+      );
+
+      return null;
+    }
+
+    const userData = userDoc.data();
+
+    const accountStatus =
+      userData.status || "active";
+
+    if (accountStatus === "suspended") {
+      await signOut(auth);
+
+      showMessage(
+        "Account Suspended",
+        "Your Ubuntu Connect account has been suspended. Please contact an administrator."
+      );
+
+      return null;
+    }
+
+    if (accountStatus === "archived") {
+      await signOut(auth);
+
+      showMessage(
+        "Account Archived",
+        "Your Ubuntu Connect account has been archived. Please contact an administrator."
+      );
+
+      return null;
+    }
+
+    return userData;
+  };
+
+  /*
    * EMAIL LOGIN
    */
+
   const handleLogin = async () => {
     const cleanEmail =
       email.trim().toLowerCase();
@@ -105,6 +172,7 @@ const LogIn = ({ navigation }) => {
         "Missing Information",
         "Please enter your email address and password."
       );
+
       return;
     }
 
@@ -116,6 +184,7 @@ const LogIn = ({ navigation }) => {
         "Invalid Email",
         "Please enter a valid email address."
       );
+
       return;
     }
 
@@ -131,28 +200,34 @@ const LogIn = ({ navigation }) => {
 
       const user = userCredential.user;
 
-      const userDoc = await getDoc(
-        doc(db, "users", user.uid)
-      );
+      /*
+       * CHECK ACCOUNT STATUS
+       */
 
-      if (!userDoc.exists()) {
-        showMessage(
-          "Profile Not Found",
-          "Your account exists, but your profile was not found in Ubuntu Connect."
-        );
+      const userData =
+        await checkAccountStatus(user);
+
+      if (!userData) {
         return;
       }
-
-      const userData = userDoc.data();
 
       const userRole =
         userData.role?.trim();
 
+      /*
+       * NAVIGATION
+       */
+
       if (userRole === "Admin") {
-        navigation.replace("AdminDashboard");
+        navigation.replace(
+          "AdminDashboard"
+        );
       } else {
-        navigation.replace("MainTabs");
+        navigation.replace(
+          "MainTabs"
+        );
       }
+
     } catch (error) {
       console.log(
         "LOGIN ERROR:",
@@ -163,21 +238,30 @@ const LogIn = ({ navigation }) => {
       let errorMessage =
         "Unable to log in. Check your email and password.";
 
-      if (error.code === "auth/invalid-email") {
+      if (
+        error.code ===
+        "auth/invalid-email"
+      ) {
         errorMessage =
           "Please enter a valid email address.";
+
       } else if (
-        error.code === "auth/invalid-credential"
+        error.code ===
+        "auth/invalid-credential"
       ) {
         errorMessage =
           "The email address or password is incorrect.";
+
       } else if (
-        error.code === "auth/too-many-requests"
+        error.code ===
+        "auth/too-many-requests"
       ) {
         errorMessage =
           "Too many login attempts were made. Please wait before trying again.";
+
       } else if (
-        error.code === "auth/network-request-failed"
+        error.code ===
+        "auth/network-request-failed"
       ) {
         errorMessage =
           "A network error occurred. Check your internet connection.";
@@ -187,6 +271,7 @@ const LogIn = ({ navigation }) => {
         "Login Error",
         errorMessage
       );
+
     } finally {
       setLoading(false);
     }
@@ -195,12 +280,14 @@ const LogIn = ({ navigation }) => {
   /*
    * GOOGLE LOGIN / SIGN UP
    */
+
   const handleGoogleLogin = async () => {
     if (!request) {
       showMessage(
         "Google Sign In",
         "Google Sign In is still loading. Please try again."
       );
+
       return;
     }
 
@@ -218,6 +305,7 @@ const LogIn = ({ navigation }) => {
         }
 
         setGoogleLoading(false);
+
         return;
       }
 
@@ -229,12 +317,14 @@ const LogIn = ({ navigation }) => {
           "Google Sign In Error",
           "Google did not return the required authentication token."
         );
+
         return;
       }
 
       /*
        * Convert Google token into Firebase credential
        */
+
       const credential =
         GoogleAuthProvider.credential(
           idToken
@@ -246,11 +336,13 @@ const LogIn = ({ navigation }) => {
           credential
         );
 
-      const user = userCredential.user;
+      const user =
+        userCredential.user;
 
       /*
        * Check whether a Firestore profile exists
        */
+
       const userRef = doc(
         db,
         "users",
@@ -266,38 +358,93 @@ const LogIn = ({ navigation }) => {
        * Create a basic Ubuntu Connect
        * profile automatically.
        */
+
       if (!userDoc.exists()) {
         await setDoc(userRef, {
           uid: user.uid,
-          email: user.email || "",
+
+          email:
+            user.email || "",
+
           name:
             user.displayName ||
             "Ubuntu Connect User",
+
           role: "User",
+
           photoURL:
             user.photoURL || "",
+
           provider: "google",
-          createdAt: serverTimestamp(),
+
+          status: "active",
+
+          createdAt:
+            serverTimestamp(),
         });
       }
 
       /*
-       * Get the latest profile information
+       * GET LATEST PROFILE
        */
+
       const updatedUserDoc =
         await getDoc(userRef);
 
+      if (!updatedUserDoc.exists()) {
+        await signOut(auth);
+
+        showMessage(
+          "Profile Error",
+          "Your Ubuntu Connect profile could not be loaded."
+        );
+
+        return;
+      }
+
       const userData =
-        updatedUserDoc.exists()
-          ? updatedUserDoc.data()
-          : {};
+        updatedUserDoc.data();
+
+      /*
+       * CHECK ACCOUNT STATUS
+       */
+
+      const accountStatus =
+        userData.status || "active";
+
+      if (
+        accountStatus === "suspended"
+      ) {
+        await signOut(auth);
+
+        showMessage(
+          "Account Suspended",
+          "Your Ubuntu Connect account has been suspended. Please contact an administrator."
+        );
+
+        return;
+      }
+
+      if (
+        accountStatus === "archived"
+      ) {
+        await signOut(auth);
+
+        showMessage(
+          "Account Archived",
+          "Your Ubuntu Connect account has been archived. Please contact an administrator."
+        );
+
+        return;
+      }
+
+      /*
+       * NAVIGATE ACCORDING TO ROLE
+       */
 
       const userRole =
         userData.role?.trim();
 
-      /*
-       * Navigate according to role
-       */
       if (userRole === "Admin") {
         navigation.replace(
           "AdminDashboard"
@@ -307,6 +454,7 @@ const LogIn = ({ navigation }) => {
           "MainTabs"
         );
       }
+
     } catch (error) {
       console.log(
         "GOOGLE LOGIN ERROR:",
@@ -323,12 +471,14 @@ const LogIn = ({ navigation }) => {
       ) {
         errorMessage =
           "A network error occurred. Check your internet connection.";
+
       } else if (
         error.code ===
         "auth/account-exists-with-different-credential"
       ) {
         errorMessage =
           "An account already exists with this email using another sign-in method.";
+
       } else if (
         error.code ===
         "auth/popup-closed-by-user"
@@ -341,6 +491,7 @@ const LogIn = ({ navigation }) => {
         "Google Sign In Error",
         errorMessage
       );
+
     } finally {
       setGoogleLoading(false);
     }
@@ -349,6 +500,7 @@ const LogIn = ({ navigation }) => {
   /*
    * GOOGLE RESPONSE LISTENER
    */
+
   useEffect(() => {
     if (!response) {
       return;
@@ -367,6 +519,7 @@ const LogIn = ({ navigation }) => {
   /*
    * FORGOT PASSWORD
    */
+
   const handleForgotPassword = async () => {
     const cleanEmail =
       email.trim().toLowerCase();
@@ -376,6 +529,7 @@ const LogIn = ({ navigation }) => {
         "Email Required",
         "Enter your email address first, then press Forgot Password."
       );
+
       return;
     }
 
@@ -387,6 +541,7 @@ const LogIn = ({ navigation }) => {
         "Invalid Email",
         "Please enter a valid email address."
       );
+
       return;
     }
 
@@ -402,6 +557,7 @@ const LogIn = ({ navigation }) => {
         "Check Your Email",
         "If an Ubuntu Connect account is associated with that email address, a password-reset link has been sent. Check your inbox and spam folder."
       );
+
     } catch (error) {
       console.log(
         "PASSWORD RESET ERROR:",
@@ -413,16 +569,19 @@ const LogIn = ({ navigation }) => {
         "The password-reset email could not be sent. Please try again.";
 
       if (
-        error.code === "auth/invalid-email"
+        error.code ===
+        "auth/invalid-email"
       ) {
         errorMessage =
           "Please enter a valid email address.";
+
       } else if (
         error.code ===
         "auth/too-many-requests"
       ) {
         errorMessage =
           "Too many reset attempts were made. Please wait before trying again.";
+
       } else if (
         error.code ===
         "auth/network-request-failed"
@@ -435,6 +594,7 @@ const LogIn = ({ navigation }) => {
         "Password Reset Error",
         errorMessage
       );
+
     } finally {
       setResettingPassword(false);
     }
@@ -443,6 +603,7 @@ const LogIn = ({ navigation }) => {
   /*
    * GUEST
    */
+
   const handleGuestLogin = () => {
     showMessage(
       "Guest Access Coming Soon",
@@ -462,7 +623,7 @@ const LogIn = ({ navigation }) => {
         behavior={
           Platform.OS === "ios"
             ? "padding"
-            : undefined
+            : "height"
         }
       >
         <ScrollView
@@ -473,6 +634,7 @@ const LogIn = ({ navigation }) => {
           }
         >
           {/* HEADER */}
+
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <View style={styles.logoCircle}>
@@ -499,6 +661,7 @@ const LogIn = ({ navigation }) => {
           </View>
 
           {/* LOGIN CARD */}
+
           <View style={styles.formCard}>
             <View style={styles.formHeader}>
               <View
@@ -528,6 +691,7 @@ const LogIn = ({ navigation }) => {
             </View>
 
             {/* EMAIL */}
+
             <Text style={styles.label}>
               Email address
             </Text>
@@ -592,6 +756,7 @@ const LogIn = ({ navigation }) => {
             </View>
 
             {/* PASSWORD */}
+
             <Text style={styles.label}>
               Password
             </Text>
@@ -659,6 +824,7 @@ const LogIn = ({ navigation }) => {
             </View>
 
             {/* FORGOT PASSWORD */}
+
             <TouchableOpacity
               style={styles.forgotButton}
               onPress={handleForgotPassword}
@@ -702,6 +868,7 @@ const LogIn = ({ navigation }) => {
             </TouchableOpacity>
 
             {/* LOGIN */}
+
             <TouchableOpacity
               style={[
                 styles.loginButton,
@@ -747,6 +914,7 @@ const LogIn = ({ navigation }) => {
             </TouchableOpacity>
 
             {/* DIVIDER */}
+
             <View
               style={styles.dividerContainer}
             >
@@ -762,6 +930,7 @@ const LogIn = ({ navigation }) => {
             </View>
 
             {/* GOOGLE */}
+
             <TouchableOpacity
               style={styles.googleButton}
               onPress={handleGoogleLogin}
@@ -797,6 +966,7 @@ const LogIn = ({ navigation }) => {
             </TouchableOpacity>
 
             {/* GUEST */}
+
             <TouchableOpacity
               style={styles.guestButton}
               onPress={handleGuestLogin}
@@ -824,6 +994,7 @@ const LogIn = ({ navigation }) => {
           </View>
 
           {/* SECURITY */}
+
           <View style={styles.securityCard}>
             <View style={styles.securityIcon}>
               <MaterialIcons
@@ -852,6 +1023,7 @@ const LogIn = ({ navigation }) => {
           </View>
 
           {/* REGISTER */}
+
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Don't have an account?
