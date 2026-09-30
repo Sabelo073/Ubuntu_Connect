@@ -32,6 +32,10 @@ const Home = ({ navigation }) => {
   const [requests, setRequests] = useState([]);
   const [startingChatId, setStartingChatId] = useState(null);
 
+  /* =========================================
+     LOAD DONATIONS + REQUESTS
+  ========================================= */
+
   useEffect(() => {
     const donationsQuery = query(
       collection(db, "donations"),
@@ -80,6 +84,10 @@ const Home = ({ navigation }) => {
       unsubscribeRequests();
     };
   }, []);
+
+  /* =========================================
+     START HELP CHAT
+  ========================================= */
 
   const startHelpConversation = async (request) => {
     const currentUser = auth.currentUser;
@@ -229,6 +237,10 @@ const Home = ({ navigation }) => {
     }
   };
 
+  /* =========================================
+     STATUS STYLE
+  ========================================= */
+
   const getStatusStyle = (status) => {
     switch (status) {
       case "Approved":
@@ -251,12 +263,20 @@ const Home = ({ navigation }) => {
     }
   };
 
+  /* =========================================
+     USER
+  ========================================= */
+
   const currentUser = auth.currentUser;
 
   const displayName =
     currentUser?.displayName ||
     currentUser?.email?.split("@")[0] ||
     "Change Maker";
+
+  /* =========================================
+     HOME
+  ========================================= */
 
   return (
     <SafeAreaView style={styles.container}>
@@ -268,11 +288,12 @@ const Home = ({ navigation }) => {
         {/* =========================================
             HEADER
         ========================================= */}
+
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.welcomeRow}>
               <Text style={styles.greeting}>
-                Good to see you
+                Good to see you 
               </Text>
 
               <MaterialIcons
@@ -311,6 +332,7 @@ const Home = ({ navigation }) => {
         {/* =========================================
             IMPACT HERO
         ========================================= */}
+
         <View style={styles.heroCard}>
           <View style={styles.heroTop}>
             <View style={styles.heroIconBox}>
@@ -358,6 +380,7 @@ const Home = ({ navigation }) => {
         {/* =========================================
             COMMUNITY STATS
         ========================================= */}
+
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>
@@ -448,6 +471,7 @@ const Home = ({ navigation }) => {
         {/* =========================================
             QUICK ACTIONS
         ========================================= */}
+
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>
@@ -462,8 +486,11 @@ const Home = ({ navigation }) => {
 
         <View style={styles.actionGrid}>
 
+          {/* DONATE */}
+
           <TouchableOpacity
             style={styles.actionCard}
+            activeOpacity={0.75}
             onPress={() =>
               navigation.navigate("Donate")
             }
@@ -498,8 +525,11 @@ const Home = ({ navigation }) => {
             />
           </TouchableOpacity>
 
+          {/* REQUEST HELP */}
+
           <TouchableOpacity
             style={styles.actionCard}
+            activeOpacity={0.75}
             onPress={() =>
               navigation.navigate("RequestHelp")
             }
@@ -534,8 +564,11 @@ const Home = ({ navigation }) => {
             />
           </TouchableOpacity>
 
+          {/* CAMPAIGNS */}
+
           <TouchableOpacity
             style={styles.actionCard}
+            activeOpacity={0.75}
             onPress={() =>
               navigation.navigate("Campaigns")
             }
@@ -570,8 +603,11 @@ const Home = ({ navigation }) => {
             />
           </TouchableOpacity>
 
+          {/* CHARITIES */}
+
           <TouchableOpacity
             style={styles.actionCard}
+            activeOpacity={0.75}
             onPress={() =>
               navigation.navigate("Charities")
             }
@@ -606,11 +642,59 @@ const Home = ({ navigation }) => {
             />
           </TouchableOpacity>
 
+          {/* =========================================
+              NEARBY MAP
+          ========================================= */}
+
+          <TouchableOpacity
+            style={[
+              styles.actionCard,
+              styles.mapActionCard,
+            ]}
+            activeOpacity={0.75}
+            onPress={() => {
+              navigation.navigate("UserMap");
+            }}
+          >
+            <View style={styles.mapActionIcon}>
+              <MaterialIcons
+                name="map"
+                size={28}
+                color="#059669"
+              />
+            </View>
+
+            <View style={styles.actionTextContainer}>
+              <View style={styles.mapTitleRow}>
+                <Text style={styles.actionTitle}>
+                  Nearby Map
+                </Text>
+
+                <View style={styles.newBadge}>
+                  <Text style={styles.newBadgeText}>
+                    NEW
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.actionDescription}>
+                Find nearby charities and pickup locations
+              </Text>
+            </View>
+
+            <MaterialIcons
+              name="chevron-right"
+              size={22}
+              color="#94A3B8"
+            />
+          </TouchableOpacity>
+
         </View>
 
         {/* =========================================
             URGENT NEED
         ========================================= */}
+
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>
@@ -668,6 +752,7 @@ const Home = ({ navigation }) => {
 
             <TouchableOpacity
               style={styles.donateBtn}
+              activeOpacity={0.8}
               onPress={() =>
                 navigation.navigate("Donate")
               }
@@ -688,6 +773,7 @@ const Home = ({ navigation }) => {
         {/* =========================================
             RECENT DONATIONS
         ========================================= */}
+
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>
@@ -763,7 +849,6 @@ const Home = ({ navigation }) => {
                 )}
 
                 <View style={styles.donationContent}>
-
                   <View style={styles.donationTopRow}>
                     <View style={styles.itemTitleRow}>
                       <View style={styles.smallIconBox}>
@@ -856,7 +941,6 @@ const Home = ({ navigation }) => {
                       {donation.deliveryMethod}
                     </Text>
                   </View>
-
                 </View>
               </View>
             );
@@ -866,6 +950,7 @@ const Home = ({ navigation }) => {
         {/* =========================================
             RECENT HELP REQUESTS
         ========================================= */}
+
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>
@@ -926,7 +1011,6 @@ const Home = ({ navigation }) => {
                 style={styles.requestCard}
               >
                 <View style={styles.requestTopRow}>
-
                   <View style={styles.requestTitleArea}>
                     <View style={styles.requestIconBox}>
                       <MaterialIcons
@@ -1143,6 +1227,7 @@ const Home = ({ navigation }) => {
         {/* =========================================
             CHARITIES
         ========================================= */}
+
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>
@@ -1165,8 +1250,11 @@ const Home = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
+        {/* UBUNTU COMMUNITY CENTER */}
+
         <TouchableOpacity
           style={styles.charityCard}
+          activeOpacity={0.75}
           onPress={() =>
             navigation.navigate("Charities")
           }
@@ -1222,8 +1310,11 @@ const Home = ({ navigation }) => {
           />
         </TouchableOpacity>
 
+        {/* HOPE FOUNDATION */}
+
         <TouchableOpacity
           style={styles.charityCard}
+          activeOpacity={0.75}
           onPress={() =>
             navigation.navigate("Charities")
           }
@@ -1279,7 +1370,10 @@ const Home = ({ navigation }) => {
           />
         </TouchableOpacity>
 
-        {/* Bottom spacing */}
+        {/* =========================================
+            BOTTOM SPACING
+        ========================================= */}
+
         <View style={{ height: 70 }} />
 
       </ScrollView>
@@ -1288,6 +1382,10 @@ const Home = ({ navigation }) => {
 };
 
 export default Home;
+
+/* =========================================
+   STYLES
+========================================= */
 
 const styles = StyleSheet.create({
   container: {
@@ -1299,9 +1397,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
 
-  /* =========================================
-     HEADER
-  ========================================= */
+  /* HEADER */
 
   header: {
     paddingHorizontal: 20,
@@ -1369,9 +1465,7 @@ const styles = StyleSheet.create({
     borderColor: "#FFFFFF",
   },
 
-  /* =========================================
-     HERO
-  ========================================= */
+  /* HERO */
 
   heroCard: {
     marginHorizontal: 20,
@@ -1447,9 +1541,7 @@ const styles = StyleSheet.create({
     marginRight: 7,
   },
 
-  /* =========================================
-     SECTION HEADERS
-  ========================================= */
+  /* SECTION HEADERS */
 
   sectionHeader: {
     marginHorizontal: 20,
@@ -1478,9 +1570,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
-  /* =========================================
-     STATS
-  ========================================= */
+  /* STATS */
 
   statsCard: {
     marginHorizontal: 20,
@@ -1529,9 +1619,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#E2E8F0",
   },
 
-  /* =========================================
-     QUICK ACTIONS
-  ========================================= */
+  /* QUICK ACTIONS */
 
   actionGrid: {
     paddingHorizontal: 20,
@@ -1577,9 +1665,43 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
-  /* =========================================
-     URGENT NEED
-  ========================================= */
+  /* MAP ACTION */
+
+  mapActionCard: {
+    borderColor: "#A7F3D0",
+    backgroundColor: "#F0FDF4",
+  },
+
+  mapActionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
+    backgroundColor: "#D1FAE5",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 13,
+  },
+
+  mapTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  newBadge: {
+    backgroundColor: "#059669",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
+    marginLeft: 7,
+  },
+
+  newBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 8,
+    fontWeight: "900",
+  },
+
+  /* URGENT */
 
   urgentLabel: {
     backgroundColor: "#FEE2E2",
@@ -1673,9 +1795,7 @@ const styles = StyleSheet.create({
     marginRight: 7,
   },
 
-  /* =========================================
-     DONATIONS
-  ========================================= */
+  /* DONATIONS */
 
   donationCard: {
     marginHorizontal: 20,
@@ -1832,9 +1952,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
 
-  /* =========================================
-     EMPTY STATES
-  ========================================= */
+  /* EMPTY STATES */
 
   emptyCard: {
     marginHorizontal: 20,
@@ -1872,9 +1990,7 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
 
-  /* =========================================
-     HELP REQUESTS
-  ========================================= */
+  /* HELP REQUESTS */
 
   requestCard: {
     marginHorizontal: 20,
@@ -2065,9 +2181,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
-  /* =========================================
-     CHARITIES
-  ========================================= */
+  /* CHARITIES */
 
   charityCard: {
     marginHorizontal: 20,

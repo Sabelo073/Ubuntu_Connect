@@ -34,6 +34,7 @@ import DeleteAccount from "../screens/DeleteAccount";
 import AuditLog from "../screens/AuditLog";
 import ReportUser from "../screens/ReportUser";
 import AdminReports from "../screens/AdminReports";
+import UserMap from "../screens/UserMap";
 
 import {
   SessionProvider,
@@ -105,6 +106,11 @@ function NavigationContent() {
         />
 
         <Stack.Screen
+          name="UserMap"
+          component={UserMap}
+        />
+
+        <Stack.Screen
           name="Campaigns"
           component={Campaigns}
         />
@@ -168,6 +174,9 @@ function NavigationContent() {
           name="ReportUser"
           component={ReportUser}
         />
+
+
+
       </Stack.Navigator>
     </NavigationContainer>
   );
