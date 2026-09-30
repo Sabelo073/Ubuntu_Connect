@@ -8,25 +8,45 @@ import {
   TouchableOpacity,
   Linking,
   Platform,
+  TextInput,
+  FlatList,
+  Keyboard,
 } from "react-native";
+
 import { WebView } from "react-native-webview";
 import * as Location from "expo-location";
+
 import {
   collection,
   onSnapshot,
 } from "firebase/firestore";
+
 import { db } from "../firebaseConfig";
+
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 const UserMap = ({ navigation }) => {
   const [userLocation, setUserLocation] = useState(null);
+
   const [charities, setCharities] = useState([]);
-  const [selectedCharity, setSelectedCharity] = useState(null);
+
+  const [selectedCharity, setSelectedCharity] =
+    useState(null);
+
   const [loading, setLoading] = useState(true);
+
+  // SEARCH
+  const [searchText, setSearchText] = useState("");
+  const [searchResults, setSearchResults] =
+    useState([]);
+
+  const [searching, setSearching] =
+    useState(false);
 
   // ============================================================
   // GET USER LOCATION
   // ============================================================
+
   useEffect(() => {
     const getUserLocation = async () => {
       try {
@@ -36,7 +56,7 @@ const UserMap = ({ navigation }) => {
         if (status !== "granted") {
           Alert.alert(
             "Location Permission",
-            "Please allow location access so Ubuntu Connect can show nearby charities."
+            "Please allow location access so Ubuntu Connect can show nearby locations."
           );
 
           // Johannesburg fallback
@@ -74,6 +94,7 @@ const UserMap = ({ navigation }) => {
   // ============================================================
   // LOAD CHARITIES FROM FIRESTORE
   // ============================================================
+
   useEffect(() => {
     const charitiesRef = collection(db, "charities");
 
@@ -103,8 +124,10 @@ const UserMap = ({ navigation }) => {
                 id: charityDoc.id,
                 ...data,
                 address,
-                latitude: geocoded[0].latitude,
-                longitude: geocoded[0].longitude,
+                latitude:
+                  geocoded[0].latitude,
+                longitude:
+                  geocoded[0].longitude,
               });
             }
           } catch (error) {
@@ -119,8 +142,12 @@ const UserMap = ({ navigation }) => {
         setCharities(charityData);
         setLoading(false);
       },
+
       (error) => {
-        console.log("Charity loading error:", error);
+        console.log(
+          "Charity loading error:",
+          error
+        );
 
         setLoading(false);
 
@@ -135,8 +162,126 @@ const UserMap = ({ navigation }) => {
   }, []);
 
   // ============================================================
+  // SEARCH LOCATIONS USING OPENSTREETMAP NOMINATIM
+  // ============================================================
+
+  const searchLocations = async () => {
+    const query = searchText.trim();
+
+    if (!query) {
+      Alert.alert(
+        "Search",
+        "Please enter a charity or location to search for."
+      );
+
+      return;
+    }
+
+    Keyboard.dismiss();
+
+    setSearching(true);
+    setSearchResults([]);
+
+    try {
+      const url =
+        "https://nominatim.openstreetmap.org/search" +
+        `?format=jsonv2` +
+        `&q=${encodeURIComponent(query)}` +
+        `&limit=8` +
+        `&addressdetails=1`;
+
+     const response = await fetch(url, {
+  headers: {
+    Accept: "application/json",
+    "User-Agent": "UbuntuConnect/1.0 (University Student Project)",
+  },
+});
+
+      if (!response.ok) {
+        throw new Error(
+          `Search failed: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      const formattedResults = data.map(
+        (item, index) => ({
+          id:
+            item.place_id?.toString() ||
+            `search-${index}`,
+
+          name:
+            item.name ||
+            "Location",
+
+          address:
+            item.display_name ||
+            "Address unavailable",
+
+          latitude: parseFloat(item.lat),
+
+          longitude: parseFloat(item.lon),
+
+          type:
+            item.type ||
+            "location",
+
+          source: "search",
+        })
+      );
+
+      setSearchResults(formattedResults);
+
+      if (formattedResults.length === 0) {
+        Alert.alert(
+          "No Results",
+          "No matching locations were found. Try a different charity name, address or area."
+        );
+      }
+    } catch (error) {
+      console.log(
+        "Location search error:",
+        error
+      );
+
+      Alert.alert(
+        "Search Error",
+        "Could not search for this location. Please check your internet connection and try again."
+      );
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  // ============================================================
+  // SELECT SEARCH RESULT
+  // ============================================================
+
+  const selectSearchResult = (result) => {
+    setSelectedCharity(result);
+
+    // Keep result visible on map
+    setSearchResults([result]);
+
+    Keyboard.dismiss();
+  };
+
+  // ============================================================
+  // CLEAR SEARCH
+  // ============================================================
+
+  const clearSearch = () => {
+    setSearchText("");
+    setSearchResults([]);
+    setSelectedCharity(null);
+    Keyboard.dismiss();
+  };
+
+  // ============================================================
   // OPEN DIRECTIONS
   // ============================================================
+
   const getDirections = async () => {
     if (!selectedCharity || !userLocation) {
       return;
@@ -175,20 +320,31 @@ const UserMap = ({ navigation }) => {
   // ============================================================
   // CREATE LEAFLET MAP
   // ============================================================
+
   const createMapHTML = () => {
     if (!userLocation) {
       return "";
     }
 
+    // ----------------------------------------------------------
+    // FIRESTORE CHARITY MARKERS
+    // ----------------------------------------------------------
+
     const charityMarkers = charities
       .map((charity) => {
         const name = String(
-          charity.name || "Charity Organisation"
-        ).replace(/'/g, "\\'");
+          charity.name ||
+            "Charity Organisation"
+        )
+          .replace(/\\/g, "\\\\")
+          .replace(/'/g, "\\'");
 
         const address = String(
-          charity.address || "Location available"
-        ).replace(/'/g, "\\'");
+          charity.address ||
+            "Location available"
+        )
+          .replace(/\\/g, "\\\\")
+          .replace(/'/g, "\\'");
 
         return `
           L.marker(
@@ -210,9 +366,57 @@ const UserMap = ({ navigation }) => {
       })
       .join("\n");
 
+    // ----------------------------------------------------------
+    // SEARCH RESULT MARKERS
+    // ----------------------------------------------------------
+
+    const searchMarkers = searchResults
+      .map((result, index) => {
+        const name = String(
+          result.name || "Search Result"
+        )
+          .replace(/\\/g, "\\\\")
+          .replace(/'/g, "\\'");
+
+        const address = String(
+          result.address ||
+            "Location available"
+        )
+          .replace(/\\/g, "\\\\")
+          .replace(/'/g, "\\'");
+
+        return `
+          L.marker(
+            [${result.latitude}, ${result.longitude}]
+          )
+          .addTo(map)
+          .bindPopup(
+            '<div style="min-width:190px;">' +
+            '<strong>${name}</strong><br/>' +
+            '<span style="font-size:12px;color:#64748B;">${address}</span>' +
+            '<br/><br/>' +
+            '<button onclick="selectSearchResult(${index})" ' +
+            'style="background:#059669;color:white;border:none;' +
+            'padding:8px 12px;border-radius:8px;font-weight:bold;">' +
+            'Select Location</button>' +
+            '</div>'
+          );
+        `;
+      })
+      .join("\n");
+
+    // ----------------------------------------------------------
+    // SEARCH RESULT DATA FOR LEAFLET
+    // ----------------------------------------------------------
+
+    const searchResultJSON =
+      JSON.stringify(searchResults);
+
     return `
       <!DOCTYPE html>
+
       <html>
+
       <head>
 
         <meta
@@ -258,53 +462,91 @@ const UserMap = ({ navigation }) => {
 
         <script>
 
-          const userLatitude = ${userLocation.latitude};
-          const userLongitude = ${userLocation.longitude};
+          const userLatitude =
+            ${userLocation.latitude};
 
-          const map = L.map("map").setView(
-            [userLatitude, userLongitude],
-            13
-          );
+          const userLongitude =
+            ${userLocation.longitude};
 
-          // OpenStreetMap tiles
+          const map =
+            L.map("map").setView(
+              [
+                userLatitude,
+                userLongitude
+              ],
+              13
+            );
+
+          // ----------------------------------------------------
+          // OPENSTREETMAP TILES
+          // ----------------------------------------------------
+
           L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             {
               maxZoom: 19,
+
               attribution:
                 '&copy; OpenStreetMap contributors'
             }
           ).addTo(map);
 
-          // User location marker
-          const userIcon = L.divIcon({
-            className: "",
-            html:
-              '<div style="' +
-              'width:18px;' +
-              'height:18px;' +
-              'background:#2563EB;' +
-              'border:4px solid white;' +
-              'border-radius:50%;' +
-              'box-shadow:0 2px 8px rgba(0,0,0,0.35);' +
-              '"></div>',
-            iconSize: [26, 26],
-            iconAnchor: [13, 13]
-          });
+          // ----------------------------------------------------
+          // USER LOCATION MARKER
+          // ----------------------------------------------------
+
+          const userIcon =
+            L.divIcon({
+              className: "",
+
+              html:
+                '<div style="' +
+                'width:18px;' +
+                'height:18px;' +
+                'background:#2563EB;' +
+                'border:4px solid white;' +
+                'border-radius:50%;' +
+                'box-shadow:0 2px 8px rgba(0,0,0,0.35);' +
+                '"></div>',
+
+              iconSize: [26, 26],
+
+              iconAnchor: [13, 13]
+            });
 
           L.marker(
-            [userLatitude, userLongitude],
+            [
+              userLatitude,
+              userLongitude
+            ],
             {
               icon: userIcon
             }
           )
           .addTo(map)
-          .bindPopup("<strong>You are here</strong>");
+          .bindPopup(
+            "<strong>You are here</strong>"
+          );
 
-          // Charity markers
+          // ----------------------------------------------------
+          // FIRESTORE CHARITY MARKERS
+          // ----------------------------------------------------
+
           ${charityMarkers}
 
-          // Send selected charity back to React Native
+          // ----------------------------------------------------
+          // SEARCH RESULT MARKERS
+          // ----------------------------------------------------
+
+          ${searchMarkers}
+
+          const searchResults =
+            ${searchResultJSON};
+
+          // ----------------------------------------------------
+          // SELECT FIRESTORE CHARITY
+          // ----------------------------------------------------
+
           function selectCharity(charityId) {
 
             window.ReactNativeWebView.postMessage(
@@ -316,9 +558,50 @@ const UserMap = ({ navigation }) => {
 
           }
 
+          // ----------------------------------------------------
+          // SELECT SEARCH RESULT
+          // ----------------------------------------------------
+
+          function selectSearchResult(index) {
+
+            const result =
+              searchResults[index];
+
+            if (!result) {
+              return;
+            }
+
+            window.ReactNativeWebView.postMessage(
+              JSON.stringify({
+                type: "SEARCH_RESULT_SELECTED",
+                result: result
+              })
+            );
+
+          }
+
+          // ----------------------------------------------------
+          // FIT MAP TO SEARCH RESULT
+          // ----------------------------------------------------
+
+          ${
+            searchResults.length > 0
+              ? `
+                map.setView(
+                  [
+                    ${searchResults[0].latitude},
+                    ${searchResults[0].longitude}
+                  ],
+                  15
+                );
+              `
+              : ""
+          }
+
         </script>
 
       </body>
+
       </html>
     `;
   };
@@ -326,19 +609,40 @@ const UserMap = ({ navigation }) => {
   // ============================================================
   // HANDLE WEBVIEW MESSAGES
   // ============================================================
-  const handleWebViewMessage = (event) => {
+
+  const handleWebViewMessage = (
+    event
+  ) => {
     try {
       const data = JSON.parse(
         event.nativeEvent.data
       );
 
-      if (data.type === "CHARITY_SELECTED") {
-        const charity = charities.find(
-          (item) => item.id === data.id
-        );
+      // Firestore charity selected
+      if (
+        data.type ===
+        "CHARITY_SELECTED"
+      ) {
+        const charity =
+          charities.find(
+            (item) =>
+              item.id === data.id
+          );
 
         if (charity) {
           setSelectedCharity(charity);
+        }
+      }
+
+      // Search result selected
+      if (
+        data.type ===
+        "SEARCH_RESULT_SELECTED"
+      ) {
+        if (data.result) {
+          setSelectedCharity(
+            data.result
+          );
         }
       }
     } catch (error) {
@@ -352,19 +656,24 @@ const UserMap = ({ navigation }) => {
   // ============================================================
   // LOADING
   // ============================================================
+
   if (!userLocation || loading) {
     return (
-      <View style={styles.loadingContainer}>
-
+      <View
+        style={
+          styles.loadingContainer
+        }
+      >
         <ActivityIndicator
           size="large"
           color="#2563EB"
         />
 
-        <Text style={styles.loadingText}>
-          Loading nearby charities...
+        <Text
+          style={styles.loadingText}
+        >
+          Loading map...
         </Text>
-
       </View>
     );
   }
@@ -372,15 +681,21 @@ const UserMap = ({ navigation }) => {
   // ============================================================
   // SCREEN
   // ============================================================
+
   return (
     <View style={styles.container}>
 
-      {/* HEADER */}
+      {/* ======================================================
+          HEADER
+      ====================================================== */}
+
       <View style={styles.header}>
 
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={() =>
+            navigation.goBack()
+          }
         >
           <MaterialIcons
             name="arrow-back"
@@ -390,64 +705,245 @@ const UserMap = ({ navigation }) => {
         </TouchableOpacity>
 
         <View>
-
-          <Text style={styles.headerTitle}>
+          <Text
+            style={styles.headerTitle}
+          >
             Nearby Charities
           </Text>
 
-          <Text style={styles.headerSubtitle}>
-            Find help and pickup locations
+          <Text
+            style={styles.headerSubtitle}
+          >
+            Find help and locations
           </Text>
-
         </View>
 
       </View>
 
-      {/* FREE OPENSTREETMAP / LEAFLET MAP */}
+      {/* ======================================================
+          SEARCH BAR
+      ====================================================== */}
+
+      <View
+        style={styles.searchContainer}
+      >
+
+        <View
+          style={styles.searchBox}
+        >
+
+          <MaterialIcons
+            name="search"
+            size={23}
+            color="#64748B"
+          />
+
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search charity or location..."
+            placeholderTextColor="#94A3B8"
+            value={searchText}
+            onChangeText={setSearchText}
+            onSubmitEditing={
+              searchLocations
+            }
+            returnKeyType="search"
+          />
+
+          {searchText.length > 0 && (
+            <TouchableOpacity
+              onPress={clearSearch}
+            >
+              <MaterialIcons
+                name="close"
+                size={21}
+                color="#64748B"
+              />
+            </TouchableOpacity>
+          )}
+
+        </View>
+
+        <TouchableOpacity
+          style={styles.searchButton}
+          onPress={searchLocations}
+          disabled={searching}
+        >
+
+          {searching ? (
+            <ActivityIndicator
+              size="small"
+              color="#FFFFFF"
+            />
+          ) : (
+            <MaterialIcons
+              name="search"
+              size={21}
+              color="#FFFFFF"
+            />
+          )}
+
+        </TouchableOpacity>
+
+      </View>
+
+      {/* ======================================================
+          SEARCH RESULTS
+      ====================================================== */}
+
+      {searchResults.length > 0 && (
+        <View
+          style={styles.resultsContainer}
+        >
+
+          <View
+            style={styles.resultsHeader}
+          >
+
+            <Text
+              style={styles.resultsTitle}
+            >
+              Search Results
+            </Text>
+
+            <TouchableOpacity
+              onPress={() =>
+                setSearchResults([])
+              }
+            >
+              <Text
+                style={styles.clearResults}
+              >
+                Clear
+              </Text>
+            </TouchableOpacity>
+
+          </View>
+
+          <FlatList
+            data={searchResults}
+            keyExtractor={(item) =>
+              item.id.toString()
+            }
+            keyboardShouldPersistTaps="handled"
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.resultItem}
+                onPress={() =>
+                  selectSearchResult(
+                    item
+                  )
+                }
+              >
+
+                <View
+                  style={styles.resultIcon}
+                >
+                  <MaterialIcons
+                    name="location-on"
+                    size={22}
+                    color="#059669"
+                  />
+                </View>
+
+                <View
+                  style={styles.resultInfo}
+                >
+
+                  <Text
+                    style={styles.resultName}
+                    numberOfLines={1}
+                  >
+                    {item.name}
+                  </Text>
+
+                  <Text
+                    style={styles.resultAddress}
+                    numberOfLines={2}
+                  >
+                    {item.address}
+                  </Text>
+
+                </View>
+
+                <MaterialIcons
+                  name="chevron-right"
+                  size={22}
+                  color="#94A3B8"
+                />
+
+              </TouchableOpacity>
+            )}
+          />
+
+        </View>
+      )}
+
+      {/* ======================================================
+          MAP
+      ====================================================== */}
+
       <WebView
         style={styles.map}
         originWhitelist={["*"]}
         source={{
           html: createMapHTML(),
         }}
-        onMessage={handleWebViewMessage}
+        onMessage={
+          handleWebViewMessage
+        }
         javaScriptEnabled={true}
         domStorageEnabled={true}
         startInLoadingState={true}
         renderLoading={() => (
-          <View style={styles.mapLoading}>
-
+          <View
+            style={styles.mapLoading}
+          >
             <ActivityIndicator
               size="large"
               color="#2563EB"
             />
-
           </View>
         )}
       />
 
-      {/* SELECTED CHARITY CARD */}
-      {selectedCharity && (
-        <View style={styles.charityCard}>
+      {/* ======================================================
+          SELECTED LOCATION CARD
+      ====================================================== */}
 
-          <View style={styles.charityIcon}>
+      {selectedCharity && (
+        <View
+          style={styles.charityCard}
+        >
+
+          <View
+            style={styles.charityIcon}
+          >
 
             <MaterialIcons
-              name="volunteer-activism"
+              name="location-on"
               size={28}
               color="#22C55E"
             />
 
           </View>
 
-          <View style={styles.charityInfo}>
+          <View
+            style={styles.charityInfo}
+          >
 
-            <Text style={styles.charityName}>
+            <Text
+              style={styles.charityName}
+              numberOfLines={1}
+            >
               {selectedCharity.name ||
-                "Charity Organisation"}
+                "Location"}
             </Text>
 
-            <Text style={styles.charityAddress}>
+            <Text
+              style={styles.charityAddress}
+              numberOfLines={2}
+            >
               {selectedCharity.address ||
                 "Location available"}
             </Text>
@@ -455,7 +951,9 @@ const UserMap = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            style={styles.directionButton}
+            style={
+              styles.directionButton
+            }
             onPress={getDirections}
           >
 
@@ -465,7 +963,9 @@ const UserMap = ({ navigation }) => {
               color="#FFFFFF"
             />
 
-            <Text style={styles.directionText}>
+            <Text
+              style={styles.directionText}
+            >
               Directions
             </Text>
 
@@ -474,24 +974,36 @@ const UserMap = ({ navigation }) => {
         </View>
       )}
 
-      {/* NO CHARITIES */}
+      {/* ======================================================
+          NO ADMIN CHARITIES
+      ====================================================== */}
+
       {!loading &&
-        charities.length === 0 && (
-          <View style={styles.emptyCard}>
+        charities.length === 0 &&
+        searchResults.length === 0 && (
+          <View
+            style={styles.emptyCard}
+          >
 
             <MaterialIcons
-              name="location-off"
+              name="search"
               size={30}
               color="#64748B"
             />
 
-            <Text style={styles.emptyTitle}>
-              No charity locations found
+            <Text
+              style={styles.emptyTitle}
+            >
+              Search for a charity
             </Text>
 
-            <Text style={styles.emptyText}>
-              Charity locations will appear here
-              once they have a valid address.
+            <Text
+              style={styles.emptyText}
+            >
+              You can search for charities,
+              organisations, shelters or
+              other locations using the
+              search bar above.
             </Text>
 
           </View>
@@ -534,6 +1046,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
 
+  // ==========================================================
+  // HEADER
+  // ==========================================================
+
   header: {
     height: 85,
     paddingHorizontal: 18,
@@ -567,9 +1083,158 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
 
+  // ==========================================================
+  // SEARCH
+  // ==========================================================
+
+  searchContainer: {
+    position: "absolute",
+    top: 94,
+    left: 15,
+    right: 15,
+    zIndex: 20,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  searchBox: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 13,
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+  },
+
+  searchInput: {
+    flex: 1,
+    marginLeft: 9,
+    marginRight: 7,
+    fontSize: 14,
+    color: "#0F172A",
+  },
+
+  searchButton: {
+    width: 50,
+    height: 50,
+    marginLeft: 8,
+    borderRadius: 13,
+    backgroundColor: "#059669",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+  },
+
+  // ==========================================================
+  // SEARCH RESULTS
+  // ==========================================================
+
+  resultsContainer: {
+    position: "absolute",
+    top: 150,
+    left: 15,
+    right: 15,
+    maxHeight: 300,
+    zIndex: 19,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    elevation: 7,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    overflow: "hidden",
+  },
+
+  resultsHeader: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+
+  resultsTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+
+  clearResults: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#2563EB",
+  },
+
+  resultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+
+  resultIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#DCFCE7",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+
+  resultInfo: {
+    flex: 1,
+    marginRight: 5,
+  },
+
+  resultName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+
+  resultAddress: {
+    marginTop: 3,
+    fontSize: 11,
+    color: "#64748B",
+    lineHeight: 16,
+  },
+
+  // ==========================================================
+  // MAP
+  // ==========================================================
+
   map: {
     flex: 1,
   },
+
+  // ==========================================================
+  // SELECTED CHARITY / LOCATION
+  // ==========================================================
 
   charityCard: {
     position: "absolute",
@@ -633,6 +1298,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+
+  // ==========================================================
+  // EMPTY STATE
+  // ==========================================================
 
   emptyCard: {
     position: "absolute",
