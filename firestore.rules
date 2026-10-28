@@ -1,0 +1,552 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================
+    // HELPER FUNCTIONS
+    // =========================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDocumentExists() {
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        );
+    }
+
+    function isAdmin() {
+      return userDocumentExists()
+        && get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.role == "Admin";
+    }
+
+    function isChatParticipant(chatId) {
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/chats/$(chatId)
+        )
+        && request.auth.uid in get(
+          /databases/$(database)/documents/chats/$(chatId)
+        ).data.participantIds;
+    }
+
+
+    // =========================================================
+    // USERS
+    // =========================================================
+
+    match /users/{userId} {
+
+      // Logged-in users can view users
+      allow read: if isSignedIn();
+
+      // A user can create their own account
+      allow create: if isSignedIn()
+        && request.auth.uid == userId;
+
+      // User can update their own account
+      // Admin can update any user
+      allow update: if isSignedIn()
+        && (
+          (
+            request.auth.uid == userId
+            && request.resource.data.role
+              == resource.data.role
+          )
+          || isAdmin()
+        );
+
+      // User or Admin can delete
+      allow delete: if isSignedIn()
+        && (
+          request.auth.uid == userId
+          || isAdmin()
+        );
+    }
+
+
+    // =========================================================
+    // REPORTS
+    // =========================================================
+
+    match /reports/{reportId} {
+
+      // Admin can view all reports
+      allow read: if isAdmin();
+
+      // Logged-in users can submit reports
+      allow create: if isSignedIn()
+        && request.resource.data.reporterId
+          == request.auth.uid
+        && request.resource.data.reportedUserId is string
+        && request.resource.data.reason is string
+        && request.resource.data.status == "pending";
+
+      // Only Admin can update reports
+      allow update: if isAdmin();
+
+      // Only Admin can delete reports
+      allow delete: if isAdmin();
+    }
+
+
+    
+    // =========================================================
+    // DONATIONS — TRACKING AND RECEIPT SECURITY
+    // =========================================================
+
+    match /donations/{donationId} {
+
+      function isDonor() {
+        return isSignedIn()
+          && resource.data.userId == request.auth.uid;
+      }
+
+      function isAssignedRecipient() {
+        return isSignedIn()
+          && resource.data.recipientId is string
+          && resource.data.recipientId == request.auth.uid;
+      }
+
+      function isAssignedVolunteer() {
+        return isSignedIn()
+          && resource.data.volunteerId is string
+          && resource.data.volunteerId == request.auth.uid;
+      }
+
+      // Signed-in users can read donations.
+      // Consider restricting this further if donations contain private details.
+      allow read: if isSignedIn();
+
+      // Donors may submit only new Pending donations.
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == "Pending";
+
+      // Admins manage review, assignment and status changes.
+      allow update: if isAdmin()
+        && request.resource.data.userId == resource.data.userId
+
+        // Donors can edit permitted details only while Pending.
+        || (
+          isDonor()
+          && resource.data.status == "Pending"
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "itemName",
+              "category",
+              "condition",
+              "description",
+              "deliveryMethod",
+              "address",
+              "imageBase64"
+            ])
+        )
+
+        // A volunteer assigned to the donation can record collection.
+        // This does NOT mean the recipient has confirmed receipt.
+        || (
+          isAssignedVolunteer()
+          && resource.data.status == "Approved"
+          && request.resource.data.status == "Collected"
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.recipientId == resource.data.recipientId
+          && request.resource.data.volunteerId == resource.data.volunteerId
+          && request.resource.data.handoverRecordedBy == request.auth.uid
+          && request.resource.data.handoverRecordedAt == request.time
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "status",
+              "handoverRecordedBy",
+              "handoverRecordedAt",
+              "statusUpdatedAt"
+            ])
+        )
+
+        // For donor-direct delivery, the donor can record the handover.
+        // The recipient must still confirm receipt separately.
+        || (
+          isDonor()
+          && resource.data.status == "Approved"
+          && resource.data.deliveryMethod == "Donor Direct Delivery"
+          && request.resource.data.status == "Collected"
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.handoverRecordedBy == request.auth.uid
+          && request.resource.data.handoverRecordedAt == request.time
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "status",
+              "handoverRecordedBy",
+              "handoverRecordedAt",
+              "statusUpdatedAt"
+            ])
+        )
+
+        
+        // Only the assigned recipient can confirm receipt.
+        // Confirmation is allowed only after collection.
+        || (
+          isAssignedRecipient()
+          && resource.data.status == "Collected"
+          && request.resource.data.status == "Completed"
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.recipientId == resource.data.recipientId
+          && request.resource.data.receivedConfirmedBy == request.auth.uid
+          && request.resource.data.verificationStatus == "Verified"
+          && request.resource.data.receivedAt == request.time
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "status",
+              "receivedAt",
+              "receivedConfirmedBy",
+              "verificationStatus",
+              "statusUpdatedAt",
+              "statusHistory"
+            ])
+        )
+
+
+      // Only admins can delete donation records.
+      allow delete: if isAdmin();
+    }
+
+
+
+    // =========================================================
+    // REQUESTS
+    // =========================================================
+
+    match /requests/{requestId} {
+
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId
+          == request.auth.uid;
+
+      allow update: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isAdmin()
+        );
+
+      allow delete: if isAdmin();
+    }
+
+
+    // =========================================================
+    // NOTIFICATIONS
+    // =========================================================
+
+    match /notifications/{notificationId} {
+
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+
+      allow create: if isSignedIn()
+        && (
+          isAdmin()
+
+          ||
+
+          (
+            request.resource.data.type == "message"
+            && request.resource.data.senderId == request.auth.uid
+            && request.resource.data.userId != request.auth.uid
+            && request.resource.data.chatId is string
+
+            && request.auth.uid in get(
+              /databases/$(database)/documents/chats/$(request.resource.data.chatId)
+            ).data.participantIds
+
+            && request.resource.data.userId in get(
+              /databases/$(database)/documents/chats/$(request.resource.data.chatId)
+            ).data.participantIds
+          )
+        );
+
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId
+          == resource.data.userId;
+
+      allow delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+
+    // =========================================================
+    // CAMPAIGNS
+    // =========================================================
+
+    match /campaigns/{campaignId} {
+
+      allow read: if isSignedIn();
+
+      allow create: if isAdmin()
+        && request.resource.data.createdBy
+          == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.description is string
+        && request.resource.data.organization is string
+        && request.resource.data.location is string
+        && request.resource.data.campaignType in ["Items", "Money"]
+        && request.resource.data.status == "Active"
+        && request.resource.data.urgent is bool;
+
+      allow update: if isAdmin()
+        && request.resource.data.createdBy
+          == resource.data.createdBy;
+
+      allow delete: if isAdmin();
+    }
+
+
+    // =========================================================
+    // CHARITIES
+    // =========================================================
+
+    match /charities/{charityId} {
+
+      allow read: if isSignedIn();
+
+      allow create: if isAdmin()
+        && request.resource.data.createdBy
+          == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.type is string
+        && request.resource.data.description is string
+        && request.resource.data.location is string
+        && request.resource.data.address is string
+        && request.resource.data.needs is list
+        && request.resource.data.services is list
+        && request.resource.data.verified is bool;
+
+      allow update: if isAdmin()
+        && request.resource.data.createdBy
+          == resource.data.createdBy;
+
+      allow delete: if isAdmin();
+    }
+
+
+    // =========================================================
+    // SESSIONS
+    // =========================================================
+
+    match /sessions/{sessionId} {
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId
+          == request.auth.uid;
+
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isAdmin()
+        );
+
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId
+          == resource.data.userId;
+
+      allow delete: if isAdmin();
+    }
+
+
+    // =========================================================
+    // AUDIT LOGS
+    // =========================================================
+
+    match /auditLogs/{logId} {
+
+      allow create: if isSignedIn()
+        && request.resource.data.actorId
+          == request.auth.uid;
+
+      allow read: if isAdmin();
+
+      allow update, delete: if false;
+    }
+
+
+    // =========================================================
+    // CHATS
+    // =========================================================
+
+    match /chats/{chatId} {
+
+      allow create: if isSignedIn()
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() == 2
+        && request.auth.uid in request.resource.data.participantIds;
+
+      allow read: if isSignedIn()
+        && request.auth.uid in resource.data.participantIds;
+
+      allow update: if isSignedIn()
+        && request.auth.uid in resource.data.participantIds
+        && request.resource.data.participantIds
+          == resource.data.participantIds;
+
+      allow delete: if isAdmin();
+
+      
+    // =========================================================
+    // COMMUNITY MATCHING — INTEREST RECORDS
+    // =========================================================
+
+    match /matches/{matchId} {
+
+      // Only the recipient, relevant donor, or Admin can read
+      // an interest record.
+      allow read: if isSignedIn()
+        && (
+          resource.data.recipientId == request.auth.uid
+          || resource.data.donorId == request.auth.uid
+          || isAdmin()
+        );
+
+      // Only the owner of the help request can express interest.
+      // The donation and request must already exist.
+      allow create: if isSignedIn()
+
+        && request.resource.data.keys().hasAll([
+          "donationId",
+          "donationName",
+          "donorId",
+          "requestId",
+          "requestName",
+          "recipientId",
+          "status",
+          "createdAt"
+        ])
+
+        && request.resource.data.keys().hasOnly([
+          "donationId",
+          "donationName",
+          "donorId",
+          "requestId",
+          "requestName",
+          "recipientId",
+          "status",
+          "createdAt"
+        ])
+
+        && request.resource.data.recipientId
+          == request.auth.uid
+
+        && request.resource.data.donationId is string
+        && request.resource.data.requestId is string
+        && request.resource.data.donorId is string
+
+        && request.resource.data.donationName is string
+        && request.resource.data.requestName is string
+
+        && request.resource.data.status == "pending"
+        && request.resource.data.createdAt == request.time
+
+        // Require the deterministic ID used by CommunityMatching.jsx.
+        && matchId
+          == request.resource.data.donationId
+            + "_"
+            + request.resource.data.requestId
+            + "_"
+            + request.auth.uid
+
+        // The referenced donation must exist and belong to
+        // the donor recorded in this interest.
+        && exists(
+          /databases/$(database)/documents/donations/$(request.resource.data.donationId)
+        )
+
+        && get(
+          /databases/$(database)/documents/donations/$(request.resource.data.donationId)
+        ).data.userId == request.resource.data.donorId
+
+        // Only available donations can receive interest.
+        && get(
+          /databases/$(database)/documents/donations/$(request.resource.data.donationId)
+        ).data.status in ["Pending", "Approved"]
+
+        // The referenced help request must exist and belong
+        // to the signed-in user.
+        && exists(
+          /databases/$(database)/documents/requests/$(request.resource.data.requestId)
+        )
+
+        && get(
+          /databases/$(database)/documents/requests/$(request.resource.data.requestId)
+        ).data.userId == request.auth.uid
+
+        // Prevent expressing interest in your own donation.
+        && request.resource.data.donorId != request.auth.uid;
+
+      // Interest records cannot be changed or deleted by clients.
+      // This also prevents a second setDoc from overwriting an
+      // existing interest record.
+      allow update, delete: if false;
+    }
+
+
+
+      // =======================================================
+      // CHAT MESSAGES
+      // =======================================================
+
+      match /messages/{messageId} {
+
+        allow read: if isChatParticipant(chatId);
+
+        allow create: if isChatParticipant(chatId)
+          && request.resource.data.senderId
+            == request.auth.uid
+
+          && request.resource.data.receiverId is string
+
+          && request.resource.data.receiverId
+            != request.auth.uid
+
+          && request.resource.data.receiverId in get(
+            /databases/$(database)/documents/chats/$(chatId)
+          ).data.participantIds
+
+          && request.resource.data.text is string
+
+          && request.resource.data.text.size() > 0
+
+          && request.resource.data.text.size() <= 1000
+
+          && request.resource.data.read == false;
+
+        allow update: if isChatParticipant(chatId)
+
+          && resource.data.receiverId
+            == request.auth.uid
+
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly(["read"])
+
+          && resource.data.read == false
+
+          && request.resource.data.read == true;
+
+        allow delete: if isAdmin();
+      }
+    }
+  }
+}

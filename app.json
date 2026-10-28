@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Ubuntu-Connect",
+    "slug": "Ubuntu-Connect",
+    "scheme": "ubuntuconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/ChatGPT Image Sep 28, 2026, 05_53_57 PM.png",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.sabelo073.ubuntuconnect",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ChatGPT Image Sep 28, 2026, 05_53_57 PM.png",
+        "backgroundColor": "#ffffff"
+      },
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sabelo073.ubuntuconnect"
+    },
+    "web": {
+      "favicon": "./ChatGPT Image Sep 28, 2026, 05_53_57 PM.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ed56a52f-34d7-47fd-a87d-2186c51f86f6"
+      }
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
+    "owner": "samkeh"
+  }
+}
