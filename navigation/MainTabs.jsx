@@ -1,7 +1,7 @@
-
 import React, { useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   collection,
   query,
@@ -23,7 +23,18 @@ import CommunityMatching from "../screens/CommunityMatching";
 
 const Tab = createBottomTabNavigator();
 
+// Options for screens reachable from My Activity but not shown in the tab bar.
+// `display: "none"` removes the reserved slot that caused the right-side gap.
+const hiddenTab = {
+  tabBarButton: () => null,
+  tabBarItemStyle: { display: "none" },
+};
+
 export default function MainTabs() {
+  // Space taken by the phone's system navigation (gesture bar / 3-button nav)
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 8);
+
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
@@ -47,7 +58,6 @@ export default function MainTabs() {
         const unread = snapshot.docs.filter(
           (document) => document.data().read === false
         );
-
         setUnreadNotificationCount(unread.length);
       },
       (error) => {
@@ -85,8 +95,7 @@ export default function MainTabs() {
     };
   }, []);
 
-  const activityBadgeCount =
-    unreadNotificationCount + unreadMessageCount;
+  const activityBadgeCount = unreadNotificationCount + unreadMessageCount;
 
   const activityBadgeValue =
     activityBadgeCount > 99 ? "99+" : activityBadgeCount;
@@ -110,21 +119,19 @@ export default function MainTabs() {
         tabBarHideOnKeyboard: true,
 
         tabBarStyle: {
-          height: 70,
-          paddingBottom: 10,
-          paddingTop: 8,
-          backgroundColor: "#FFFFFF",
-          borderTopWidth: 0,
-          elevation: 10,
-          shadowColor: "#000000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
+          height: 62 + bottomInset,
+          paddingTop: 6,
+          paddingBottom: bottomInset,
+        },
+
+        tabBarItemStyle: {
+          flex: 1,
         },
 
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: "600",
+          textAlign: "center",
         },
 
         tabBarIcon: ({ focused, color }) => {
@@ -146,23 +153,18 @@ export default function MainTabs() {
         },
       })}
     >
-      {/* Main visible bottom tabs */}
+      {/* Five visible bottom tabs */}
       <Tab.Screen name="Home" component={Home} />
 
       <Tab.Screen name="Donate" component={Donate} />
 
-      <Tab.Screen
-        name="Ubuntu Match"
-        component={CommunityMatching}
-      />
+      <Tab.Screen name="Ubuntu Match" component={CommunityMatching} />
 
       <Tab.Screen
         name="My Activity"
         options={{
           tabBarBadge:
-            activityBadgeCount > 0
-              ? activityBadgeValue
-              : undefined,
+            activityBadgeCount > 0 ? activityBadgeValue : undefined,
           tabBarBadgeStyle: badgeStyle,
         }}
       >
@@ -177,29 +179,29 @@ export default function MainTabs() {
 
       <Tab.Screen name="Profile" component={Profile} />
 
-      {/* Screens accessed from My Activity, not shown as bottom tabs */}
+      {/* Screens accessed from My Activity (hidden from the tab bar) */}
       <Tab.Screen
         name="My Donations"
         component={MyDonations}
-        options={{ tabBarButton: () => null }}
+        options={hiddenTab}
       />
 
       <Tab.Screen
         name="Recipient Confirmations"
         component={RecipientConfirmations}
-        options={{ tabBarButton: () => null }}
+        options={hiddenTab}
       />
 
       <Tab.Screen
         name="Messages"
         component={Messages}
-        options={{ tabBarButton: () => null }}
+        options={hiddenTab}
       />
 
       <Tab.Screen
         name="Notifications"
         component={Notifications}
-        options={{ tabBarButton: () => null }}
+        options={hiddenTab}
       />
     </Tab.Navigator>
   );

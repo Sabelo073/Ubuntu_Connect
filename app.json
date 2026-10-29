@@ -28,7 +28,10 @@
       }
     },
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-asset",
+      "expo-font",
+      "expo-status-bar"
     ],
     "owner": "samkeh"
   }

@@ -33,32 +33,38 @@ import { auth, db } from "../firebaseConfig";
 import { useSession } from "../context/SessionContext";
 
 /* =====================================================
-   DESIGN TOKENS
+   DESIGN TOKENS  (same palette as the Home screen)
 ===================================================== */
 
 const COLORS = {
-  bg: "#F3F5FA",
+  bg: "#F8FAFC",
   surface: "#FFFFFF",
   ink: "#0F172A",
-  text: "#334155",
+  text: "#475569",
   muted: "#64748B",
   subtle: "#94A3B8",
-  border: "#E4E9F2",
-  hairline: "#EEF1F7",
-  navy: "#0B1B3F",
-  navySoft: "#16295A",
+  border: "#E2E8F0",
+  hairline: "#F1F5F9",
+
+  purple: "#7C3AED",
   primary: "#2563EB",
+
+  blueTint: "#EFF6FF",
+  blueStrong: "#DBEAFE",
+  greenTint: "#F0FDF4",
+  greenBadge: "#DCFCE7",
+  greenBorder: "#A7F3D0",
 };
 
 /* Each tone has a foreground, soft background and solid colour. */
 const TONES = {
-  blue: { fg: "#1D4ED8", bg: "#EAF1FF", solid: "#2563EB" },
-  green: { fg: "#15803D", bg: "#E3F8EA", solid: "#16A34A" },
-  amber: { fg: "#B45309", bg: "#FEF3C7", solid: "#D97706" },
-  orange: { fg: "#C2410C", bg: "#FFEDD5", solid: "#EA580C" },
-  red: { fg: "#B91C1C", bg: "#FEE2E2", solid: "#DC2626" },
-  teal: { fg: "#0F766E", bg: "#CCFBF1", solid: "#0F766E" },
-  purple: { fg: "#6D28D9", bg: "#EDE9FE", solid: "#7C3AED" },
+  blue: { fg: "#2563EB", bg: "#EFF6FF", solid: "#2563EB" },
+  green: { fg: "#16A34A", bg: "#DCFCE7", solid: "#22C55E" },
+  amber: { fg: "#D97706", bg: "#FEF3C7", solid: "#D97706" },
+  orange: { fg: "#EA580C", bg: "#FFF7ED", solid: "#F97316" },
+  red: { fg: "#DC2626", bg: "#FEE2E2", solid: "#DC2626" },
+  teal: { fg: "#059669", bg: "#D1FAE5", solid: "#059669" },
+  purple: { fg: "#7C3AED", bg: "#F5F3FF", solid: "#7C3AED" },
   slate: { fg: "#475569", bg: "#E2E8F0", solid: "#64748B" },
 };
 
@@ -134,7 +140,7 @@ const Button = ({
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={color} />
+        <ActivityIndicator size="small" color={isSolid ? "#FFFFFF" : t.fg} />
       ) : (
         <>
           {icon ? <MaterialIcons name={icon} size={18} color={color} /> : null}
@@ -183,7 +189,7 @@ const CardHeader = ({ icon, tone, title, badge }) => (
 
 const MetaRow = ({ icon, text, numberOfLines = 2 }) => (
   <View style={styles.metaRow}>
-    <MaterialIcons name={icon} size={16} color={COLORS.subtle} />
+    <MaterialIcons name={icon} size={16} color={COLORS.muted} />
     <Text style={styles.metaText} numberOfLines={numberOfLines}>
       {text}
     </Text>
@@ -192,7 +198,7 @@ const MetaRow = ({ icon, text, numberOfLines = 2 }) => (
 
 const Chip = ({ icon, text }) => (
   <View style={styles.chip}>
-    <MaterialIcons name={icon} size={13} color={COLORS.muted} />
+    <MaterialIcons name={icon} size={13} color={COLORS.purple} />
     <Text style={styles.chipText}>{text}</Text>
   </View>
 );
@@ -217,7 +223,7 @@ const InfoBlock = ({ icon, tone, label, value }) => (
 const EmptyState = ({ icon, title, text }) => (
   <View style={styles.emptyCard}>
     <View style={styles.emptyIcon}>
-      <MaterialIcons name={icon} size={30} color={COLORS.subtle} />
+      <MaterialIcons name={icon} size={28} color={COLORS.subtle} />
     </View>
     <Text style={styles.emptyTitle}>{title}</Text>
     <Text style={styles.emptyText}>{text}</Text>
@@ -226,7 +232,7 @@ const EmptyState = ({ icon, title, text }) => (
 
 const StatTile = ({ icon, tone, value, label }) => (
   <View style={styles.statTile}>
-    <IconTile icon={icon} tone={tone} size={36} />
+    <IconTile icon={icon} tone={tone} size={38} />
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
@@ -242,6 +248,7 @@ const QuickAction = ({ icon, tone, label, onPress }) => (
     <Text style={styles.quickActionText} numberOfLines={1}>
       {label}
     </Text>
+    <MaterialIcons name="chevron-right" size={18} color={COLORS.subtle} />
   </TouchableOpacity>
 );
 
@@ -1039,15 +1046,15 @@ const AdminDashboard = ({ navigation }) => {
       const isProcessing = processingId === campaign.id;
 
       return (
-        <Card key={campaign.id} tone="blue">
+        <Card key={campaign.id} tone="orange">
           <CardHeader
             icon="campaign"
-            tone="blue"
+            tone="orange"
             title={campaign.title}
             badge={<StatusBadge status={status} />}
           />
 
-          <Text style={styles.cardSubtitle}>
+          <Text style={[styles.cardSubtitle, { color: TONES.orange.fg }]}>
             {campaign.organization || "Ubuntu Connect"}
           </Text>
 
@@ -1175,10 +1182,10 @@ const AdminDashboard = ({ navigation }) => {
         : charity.services || "Not specified";
 
       return (
-        <Card key={charity.id} tone="green">
+        <Card key={charity.id} tone="purple">
           <CardHeader
             icon="business"
-            tone="green"
+            tone="purple"
             title={charity.name}
             badge={
               <Badge
@@ -1189,7 +1196,7 @@ const AdminDashboard = ({ navigation }) => {
             }
           />
 
-          <Text style={[styles.cardSubtitle, { color: TONES.green.fg }]}>
+          <Text style={[styles.cardSubtitle, { color: TONES.purple.fg }]}>
             {charity.type || "Community Organisation"}
           </Text>
 
@@ -1490,10 +1497,10 @@ const AdminDashboard = ({ navigation }) => {
       const isProcessing = processingId === request.id;
 
       return (
-        <Card key={request.id} tone="orange">
+        <Card key={request.id} tone="green">
           <CardHeader
             icon="volunteer-activism"
-            tone="orange"
+            tone="green"
             title={request.itemNeeded}
             badge={<StatusBadge status={status} />}
           />
@@ -1578,10 +1585,10 @@ const AdminDashboard = ({ navigation }) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <IconTile icon="admin-panel-settings" tone="blue" size={72} />
+        <IconTile icon="admin-panel-settings" tone="purple" size={72} />
         <ActivityIndicator
           size="large"
-          color={COLORS.primary}
+          color={COLORS.purple}
           style={{ marginTop: 22 }}
         />
         <Text style={styles.loadingText}>Checking admin access...</Text>
@@ -1595,6 +1602,8 @@ const AdminDashboard = ({ navigation }) => {
   ===================================================== */
 
   const currentSection = sectionMeta[activeTab];
+  const adminName =
+    adminData?.fullName || adminData?.name || "Administrator";
 
   return (
     <View style={styles.root}>
@@ -1605,6 +1614,9 @@ const AdminDashboard = ({ navigation }) => {
       >
         {/* ---------- Hero header ---------- */}
         <View style={styles.hero}>
+          <View style={styles.heroCircleA} />
+          <View style={styles.heroCircleB} />
+
           <SafeAreaView edges={["top", "left", "right"]}>
             <View style={styles.heroInner}>
               <View style={styles.heroTopRow}>
@@ -1618,18 +1630,47 @@ const AdminDashboard = ({ navigation }) => {
                   onPress={handleLogout}
                   activeOpacity={0.8}
                 >
-                  <MaterialIcons name="logout" size={17} color="#FFFFFF" />
+                  <MaterialIcons name="logout" size={16} color="#FFFFFF" />
                   <Text style={styles.logoutText}>Logout</Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.welcome}>Welcome back,</Text>
-              <Text style={styles.adminName} numberOfLines={1}>
-                {adminData?.fullName || adminData?.name || "Administrator"}
-              </Text>
+              <View style={styles.heroNameRow}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {adminName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.welcome}>Welcome back,</Text>
+                  <Text style={styles.adminName} numberOfLines={1}>
+                    {adminName}
+                  </Text>
+                </View>
+              </View>
+
               <Text style={styles.heroSubtitle}>
                 Manage Ubuntu Connect from one place.
               </Text>
+
+              <View style={styles.heroChipRow}>
+                <View style={styles.heroChip}>
+                  <MaterialIcons
+                    name="pending-actions"
+                    size={15}
+                    color="#FFFFFF"
+                  />
+                  <Text style={styles.heroChipText}>
+                    {pendingCount} pending review
+                  </Text>
+                </View>
+
+                <View style={styles.heroChip}>
+                  <MaterialIcons name="people" size={15} color="#FFFFFF" />
+                  <Text style={styles.heroChipText}>{usersCount} users</Text>
+                </View>
+              </View>
             </View>
           </SafeAreaView>
         </View>
@@ -1649,22 +1690,22 @@ const AdminDashboard = ({ navigation }) => {
           </View>
 
           <View style={styles.statsGrid}>
-            <StatTile icon="people" tone="blue" value={usersCount} label="Users" />
+            <StatTile icon="people" tone="purple" value={usersCount} label="Users" />
             <StatTile
               icon="card-giftcard"
-              tone="green"
+              tone="blue"
               value={donations.length}
               label="Donations"
             />
             <StatTile
               icon="volunteer-activism"
-              tone="orange"
+              tone="green"
               value={requests.length}
               label="Requests"
             />
             <StatTile
               icon="schedule"
-              tone="amber"
+              tone="orange"
               value={pendingCount}
               label="Pending"
             />
@@ -1678,29 +1719,31 @@ const AdminDashboard = ({ navigation }) => {
                   Create and manage platform resources
                 </Text>
               </View>
-              <MaterialIcons
-                name="dashboard-customize"
-                size={22}
-                color={COLORS.primary}
-              />
+              <View style={styles.quickHeaderIcon}>
+                <MaterialIcons
+                  name="dashboard-customize"
+                  size={20}
+                  color={COLORS.purple}
+                />
+              </View>
             </View>
 
             <View style={styles.quickGrid}>
               <QuickAction
                 icon="campaign"
-                tone="blue"
+                tone="orange"
                 label="New Campaign"
                 onPress={() => navigation.navigate("CreateCampaign")}
               />
               <QuickAction
                 icon="business"
-                tone="green"
+                tone="purple"
                 label="New Charity"
                 onPress={() => navigation.navigate("CreateCharity")}
               />
               <QuickAction
                 icon="fact-check"
-                tone="purple"
+                tone="blue"
                 label="Audit Logs"
                 onPress={() => navigation.navigate("AuditLog")}
               />
@@ -1765,7 +1808,7 @@ const AdminDashboard = ({ navigation }) => {
           {currentSection.render()}
         </View>
 
-        <View style={{ height: 90 }} />
+        <View style={{ height: 24 }} />
       </ScrollView>
     </View>
   );
@@ -1779,10 +1822,10 @@ export default AdminDashboard;
 
 const cardShadow = {
   shadowColor: "#0F172A",
-  shadowOpacity: 0.06,
-  shadowRadius: 12,
+  shadowOpacity: 0.05,
+  shadowRadius: 10,
   shadowOffset: { width: 0, height: 4 },
-  elevation: 3,
+  elevation: 2,
 };
 
 const styles = StyleSheet.create({
@@ -1819,17 +1862,36 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  /* ---------- Hero ---------- */
+  /* ---------- Hero (purple, as on Home) ---------- */
   hero: {
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.purple,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
     marginBottom: 20,
+    overflow: "hidden",
+  },
+  heroCircleA: {
+    position: "absolute",
+    top: -60,
+    right: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "rgba(255,255,255,0.10)",
+  },
+  heroCircleB: {
+    position: "absolute",
+    bottom: -50,
+    left: -40,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(255,255,255,0.07)",
   },
   heroInner: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 28,
+    paddingBottom: 26,
   },
   heroTopRow: {
     flexDirection: "row",
@@ -1840,8 +1902,8 @@ const styles = StyleSheet.create({
   rolePill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    paddingHorizontal: 11,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
@@ -1853,7 +1915,7 @@ const styles = StyleSheet.create({
     marginRight: 7,
   },
   roleText: {
-    color: "#BFD3FF",
+    color: "#FFFFFF",
     fontSize: 10.5,
     fontWeight: "800",
     letterSpacing: 1.3,
@@ -1861,7 +1923,7 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
@@ -1872,22 +1934,62 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+  heroNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.4)",
+  },
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "800",
+  },
   welcome: {
-    color: "#93A9D9",
-    fontSize: 14,
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 13.5,
     fontWeight: "500",
   },
   adminName: {
     color: "#FFFFFF",
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "800",
-    marginTop: 3,
+    marginTop: 1,
     letterSpacing: -0.3,
   },
   heroSubtitle: {
-    color: "#7F96C9",
+    color: "rgba(255,255,255,0.82)",
     fontSize: 12.5,
-    marginTop: 6,
+    marginTop: 12,
+  },
+  heroChipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 14,
+  },
+  heroChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: 20,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    gap: 6,
+  },
+  heroChipText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   /* ---------- Overview ---------- */
@@ -1910,7 +2012,7 @@ const styles = StyleSheet.create({
   liveBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#DCFCE7",
+    backgroundColor: COLORS.greenBadge,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -1919,11 +2021,11 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#22C55E",
+    backgroundColor: TONES.green.solid,
     marginRight: 5,
   },
   liveText: {
-    color: "#15803D",
+    color: TONES.green.fg,
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 0.8,
@@ -1938,7 +2040,7 @@ const styles = StyleSheet.create({
   statTile: {
     width: "48.3%",
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 15,
     marginBottom: 12,
     borderWidth: 1,
@@ -1947,7 +2049,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     color: COLORS.ink,
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "800",
     marginTop: 12,
     letterSpacing: -0.5,
@@ -1962,7 +2064,7 @@ const styles = StyleSheet.create({
   /* ---------- Quick actions ---------- */
   quickCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -1974,6 +2076,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 14,
+  },
+  quickHeaderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: TONES.purple.bg,
+    alignItems: "center",
+    justifyContent: "center",
   },
   quickTitle: {
     color: COLORS.ink,
@@ -1996,11 +2106,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.bg,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.hairline,
+    borderColor: COLORS.border,
     padding: 10,
-    gap: 10,
+    gap: 8,
   },
   quickActionText: {
     flex: 1,
@@ -2031,8 +2141,8 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   tabActive: {
-    backgroundColor: COLORS.navy,
-    borderColor: COLORS.navy,
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   tabText: {
     color: COLORS.muted,
@@ -2047,15 +2157,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     height: 20,
     borderRadius: 10,
-    backgroundColor: COLORS.hairline,
+    backgroundColor: COLORS.blueTint,
     alignItems: "center",
     justifyContent: "center",
   },
   tabCountActive: {
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.25)",
   },
   tabCountText: {
-    color: COLORS.muted,
+    color: COLORS.primary,
     fontSize: 11,
     fontWeight: "800",
   },
@@ -2083,7 +2193,7 @@ const styles = StyleSheet.create({
   /* ---------- Cards ---------- */
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: 20,
+    borderRadius: 22,
     padding: 16,
     paddingLeft: 20,
     marginBottom: 14,
@@ -2154,16 +2264,14 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.bg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: TONES.purple.bg,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
     gap: 5,
   },
   chipText: {
-    color: COLORS.text,
+    color: TONES.purple.fg,
     fontSize: 11.5,
     fontWeight: "600",
   },
@@ -2183,7 +2291,7 @@ const styles = StyleSheet.create({
   /* ---------- Progress ---------- */
   progressBox: {
     backgroundColor: COLORS.bg,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 13,
     marginTop: 8,
     marginBottom: 12,
@@ -2210,13 +2318,13 @@ const styles = StyleSheet.create({
   progressTrack: {
     height: 9,
     borderRadius: 6,
-    backgroundColor: "#DDE3EE",
+    backgroundColor: COLORS.border,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
     borderRadius: 6,
-    backgroundColor: "#22C55E",
+    backgroundColor: TONES.green.solid,
   },
   progressPercent: {
     color: COLORS.muted,
@@ -2229,7 +2337,7 @@ const styles = StyleSheet.create({
   /* ---------- Info blocks ---------- */
   infoBlock: {
     backgroundColor: COLORS.bg,
-    borderRadius: 13,
+    borderRadius: 14,
     padding: 12,
     marginTop: 8,
     borderWidth: 1,
@@ -2257,10 +2365,10 @@ const styles = StyleSheet.create({
 
   /* ---------- Assignment ---------- */
   assignBox: {
-    backgroundColor: "#F5F8FF",
-    borderRadius: 14,
+    backgroundColor: COLORS.blueTint,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#DCE6FB",
+    borderColor: COLORS.blueStrong,
     padding: 12,
     marginTop: 6,
   },
@@ -2270,7 +2378,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   assignLabel: {
-    color: COLORS.subtle,
+    color: COLORS.muted,
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 0.8,
@@ -2284,7 +2392,7 @@ const styles = StyleSheet.create({
   assignToggle: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: TONES.blue.bg,
+    backgroundColor: "#FFFFFF",
     paddingLeft: 12,
     paddingRight: 8,
     paddingVertical: 8,
@@ -2316,8 +2424,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   recipientRowActive: {
-    borderColor: "#86EFAC",
-    backgroundColor: "#F0FDF4",
+    borderColor: COLORS.greenBorder,
+    backgroundColor: COLORS.greenTint,
   },
   recipientAvatar: {
     width: 34,
@@ -2408,7 +2516,7 @@ const styles = StyleSheet.create({
   /* ---------- Empty ---------- */
   emptyCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 20,
+    borderRadius: 22,
     paddingVertical: 34,
     paddingHorizontal: 24,
     alignItems: "center",
@@ -2426,7 +2534,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emptyTitle: {
-    color: COLORS.text,
+    color: COLORS.ink,
     fontSize: 15,
     fontWeight: "800",
     marginBottom: 4,
