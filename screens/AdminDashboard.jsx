@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import {
@@ -1606,7 +1607,10 @@ const AdminDashboard = ({ navigation }) => {
     adminData?.fullName || adminData?.name || "Administrator";
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={["top", "left", "right"]}>
+      {/* Dark icons (time, battery, wifi, sim) on the light status area */}
+      <StatusBar style="dark" />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -1614,10 +1618,7 @@ const AdminDashboard = ({ navigation }) => {
       >
         {/* ---------- Hero header ---------- */}
         <View style={styles.hero}>
-          <View style={styles.heroCircleA} />
-          <View style={styles.heroCircleB} />
-
-          <SafeAreaView edges={["top", "left", "right"]}>
+          <View>
             <View style={styles.heroInner}>
               <View style={styles.heroTopRow}>
                 <View style={styles.rolePill}>
@@ -1643,7 +1644,7 @@ const AdminDashboard = ({ navigation }) => {
                 </View>
 
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.welcome}>Welcome back,</Text>
+                  <Text style={styles.welcome}>Welcome back</Text>
                   <Text style={styles.adminName} numberOfLines={1}>
                     {adminName}
                   </Text>
@@ -1672,7 +1673,7 @@ const AdminDashboard = ({ navigation }) => {
                 </View>
               </View>
             </View>
-          </SafeAreaView>
+          </View>
         </View>
 
         {/* ---------- Overview + quick actions ---------- */}
@@ -1810,7 +1811,7 @@ const AdminDashboard = ({ navigation }) => {
 
         <View style={{ height: 24 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -1865,33 +1866,17 @@ const styles = StyleSheet.create({
   /* ---------- Hero (purple, as on Home) ---------- */
   hero: {
     backgroundColor: COLORS.purple,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
+    borderRadius: 28,
+    marginHorizontal: 18,
+    marginTop: 8,
     marginBottom: 20,
     overflow: "hidden",
-  },
-  heroCircleA: {
-    position: "absolute",
-    top: -60,
-    right: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: "rgba(255,255,255,0.10)",
-  },
-  heroCircleB: {
-    position: "absolute",
-    bottom: -50,
-    left: -40,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "rgba(255,255,255,0.07)",
+  
   },
   heroInner: {
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 26,
+    paddingTop: 18,
+    paddingBottom: 24,
   },
   heroTopRow: {
     flexDirection: "row",
@@ -1961,7 +1946,7 @@ const styles = StyleSheet.create({
   },
   adminName: {
     color: "#FFFFFF",
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "800",
     marginTop: 1,
     letterSpacing: -0.3,

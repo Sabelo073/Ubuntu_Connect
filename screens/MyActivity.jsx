@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useNavigation } from "@react-navigation/native";
+
 
 function ActivityCard({ title, description, icon, onPress, badge }) {
   return (
@@ -43,6 +45,19 @@ export default function MyActivity({
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
+        <TouchableOpacity
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.GoBack();
+            } else {
+              navigation.navigate("MainTabs");
+            }
+          }}
+        >
+          <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+            ← Back 
+          </Text>
+        </TouchableOpacity>
         <Text style={styles.heading}>My Activity</Text>
         <Text style={styles.subtitle}>
           Track your donations, confirmations, and conversations.
@@ -92,7 +107,7 @@ const styles = StyleSheet.create({
     paddingBottom: 35,
   },
   heading: {
-    fontSize: 27,
+    fontSize: 22,
     fontWeight: "800",
     color: "#0F172A",
     marginTop: 8,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import {
   View,
@@ -11,9 +11,11 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
+  Animated,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
 import {
   signInWithEmailAndPassword,
@@ -66,6 +68,28 @@ const LogIn = ({ navigation }) => {
   const [hidePassword, setHidePassword] = useState(true);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+
+  /*
+   * ENTRANCE ANIMATION
+   */
+
+  const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const slideAnimation = useRef(new Animated.Value(18)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnimation, {
+        toValue: 1,
+        duration: 450,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnimation, {
+        toValue: 0,
+        duration: 450,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnimation, slideAnimation]);
 
   /*
    * GOOGLE AUTH REQUEST
@@ -439,6 +463,8 @@ const LogIn = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -448,201 +474,226 @@ const LogIn = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scrollContent}
         >
-          {/* HEADER */}
+          <Animated.View
+            style={{
+              opacity: fadeAnimation,
+              transform: [{ translateY: slideAnimation }],
+            }}
+          >
+            {/* HEADER */}
 
-          <View style={styles.header}>
-            <View style={styles.logoMark}>
-              <Text style={styles.logoBlue}>U</Text>
-              <Text style={styles.logoGreen}>C</Text>
+            <View style={styles.header}>
+              <View style={styles.logoMark}>
+                <Text style={styles.logoBlue}>U</Text>
+                <Text style={styles.logoGreen}>C</Text>
+              </View>
+
+              <Text style={styles.brand}>
+                <Text style={styles.brandBlue}>Ubuntu </Text>
+                <Text style={styles.brandGreen}>Connect</Text>
+              </Text>
             </View>
 
-            <Text style={styles.brand}>
-              <Text style={styles.brandBlue}>Ubuntu </Text>
-              <Text style={styles.brandGreen}>Connect</Text>
+            <Text style={styles.welcome}>Welcome back</Text>
+
+            <Text style={styles.subtitle}>
+              Sign in to continue making a difference in your community.
             </Text>
-          </View>
 
-          <Text style={styles.welcome}>Welcome back</Text>
+            {/* FORM */}
 
-          <Text style={styles.subtitle}>
-            Sign in to continue making a difference in your community.
-          </Text>
+            <View style={styles.formCard}>
+              {/* EMAIL */}
 
-          {/* FORM */}
+              <Text style={styles.label}>Email address</Text>
 
-          <View style={styles.formCard}>
-            {/* EMAIL */}
+              <View
+                style={[
+                  styles.inputContainer,
+                  emailFocused && styles.inputFocused,
+                ]}
+              >
+                <MaterialIcons
+                  name="mail-outline"
+                  size={21}
+                  color={emailFocused ? BLUE : MUTED}
+                />
 
-            <Text style={styles.label}>Email address</Text>
+                <TextInput
+                  placeholder="you@example.com"
+                  placeholderTextColor={MUTED}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isBusy}
+                  style={styles.input}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  returnKeyType="next"
+                />
 
-            <View
-              style={[
-                styles.inputContainer,
-                emailFocused && styles.inputFocused,
-              ]}
-            >
-              <MaterialIcons
-                name="mail-outline"
-                size={20}
-                color={emailFocused ? BLUE : MUTED}
-              />
+                {EMAIL_PATTERN.test(email.trim()) && (
+                  <MaterialIcons name="check-circle" size={19} color={GREEN} />
+                )}
+              </View>
 
-              <TextInput
-                placeholder="you@example.com"
-                placeholderTextColor={MUTED}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isBusy}
-                style={styles.input}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                returnKeyType="next"
-              />
+              {/* PASSWORD */}
 
-              {EMAIL_PATTERN.test(email.trim()) && (
-                <MaterialIcons name="check" size={18} color={GREEN} />
-              )}
-            </View>
+              <View style={styles.labelRow}>
+                <Text style={styles.labelInline}>Password</Text>
 
-            {/* PASSWORD */}
+                <TouchableOpacity
+                  onPress={handleForgotPassword}
+                  disabled={isBusy}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  {resettingPassword ? (
+                    <View style={styles.row}>
+                      <ActivityIndicator size="small" color={BLUE} />
+                      <Text style={styles.resettingText}>Sending...</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.forgot}>Forgot password?</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.labelRow}>
-              <Text style={styles.label}>Password</Text>
+              <View
+                style={[
+                  styles.inputContainer,
+                  passwordFocused && styles.inputFocused,
+                ]}
+              >
+                <MaterialIcons
+                  name="lock-outline"
+                  size={21}
+                  color={passwordFocused ? BLUE : MUTED}
+                />
+
+                <TextInput
+                  placeholder="Enter your password"
+                  placeholderTextColor={MUTED}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={hidePassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isBusy}
+                  style={styles.input}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
+                />
+
+                <TouchableOpacity
+                  onPress={() => setHidePassword((current) => !current)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <MaterialIcons
+                    name={hidePassword ? "visibility-off" : "visibility"}
+                    size={21}
+                    color={SLATE}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* LOGIN */}
 
               <TouchableOpacity
-                onPress={handleForgotPassword}
+                style={[styles.loginButton, isBusy && styles.disabledButton]}
+                onPress={handleLogin}
+                disabled={isBusy}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <View style={styles.row}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.loginTextWithGap}>Signing in...</Text>
+                  </View>
+                ) : (
+                  <View style={styles.row}>
+                    <Text style={styles.loginText}>Log in</Text>
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={19}
+                      color="#FFFFFF"
+                      style={styles.loginArrow}
+                    />
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              {/* DIVIDER */}
+
+              <View style={styles.dividerContainer}>
+                <View style={styles.line} />
+                <Text style={styles.or}>or continue with</Text>
+                <View style={styles.line} />
+              </View>
+
+              {/* GOOGLE */}
+
+              <TouchableOpacity
+                style={[styles.googleButton, isBusy && styles.disabledButton]}
+                onPress={handleGoogleLogin}
+                disabled={isBusy || !request}
+                activeOpacity={0.8}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator size="small" color={INK} />
+                ) : (
+                  <View style={styles.googleBadge}>
+                    <Text style={styles.googleG}>G</Text>
+                  </View>
+                )}
+
+                <Text style={styles.googleText}>
+                  {googleLoading ? "Connecting to Google..." : "Google"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* SECURE NOTE */}
+
+            <View style={styles.secureRow}>
+              <MaterialIcons name="lock" size={14} color={MUTED} />
+              <Text style={styles.secureText}>
+                Your details are kept private and secure
+              </Text>
+            </View>
+
+            {/* GUEST */}
+
+            <TouchableOpacity
+              style={styles.guestButton}
+              onPress={handleGuestLogin}
+              disabled={isBusy}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.guestText}>Continue as guest</Text>
+              <MaterialIcons name="arrow-forward" size={16} color={GREEN} />
+            </TouchableOpacity>
+
+            {/* REGISTER */}
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Don't have an account?</Text>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Register")}
                 disabled={isBusy}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                {resettingPassword ? (
-                  <View style={styles.row}>
-                    <ActivityIndicator size="small" color={BLUE} />
-                    <Text style={styles.resettingText}>Sending...</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.forgot}>Forgot password?</Text>
-                )}
+                <Text style={styles.register}>Register</Text>
               </TouchableOpacity>
             </View>
-
-            <View
-              style={[
-                styles.inputContainer,
-                passwordFocused && styles.inputFocused,
-              ]}
-            >
-              <MaterialIcons
-                name="lock-outline"
-                size={20}
-                color={passwordFocused ? BLUE : MUTED}
-              />
-
-              <TextInput
-                placeholder="Enter your password"
-                placeholderTextColor={MUTED}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={hidePassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isBusy}
-                style={styles.input}
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
-              />
-
-              <TouchableOpacity
-                onPress={() => setHidePassword((current) => !current)}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <MaterialIcons
-                  name={hidePassword ? "visibility-off" : "visibility"}
-                  size={20}
-                  color={SLATE}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* LOGIN */}
-
-            <TouchableOpacity
-              style={[styles.loginButton, isBusy && styles.disabledButton]}
-              onPress={handleLogin}
-              disabled={isBusy}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <View style={styles.row}>
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text style={styles.loginText}>Signing in...</Text>
-                </View>
-              ) : (
-                <Text style={styles.loginText}>Log in</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* DIVIDER */}
-
-            <View style={styles.dividerContainer}>
-              <View style={styles.line} />
-              <Text style={styles.or}>or</Text>
-              <View style={styles.line} />
-            </View>
-
-            {/* GOOGLE */}
-
-            <TouchableOpacity
-              style={[styles.googleButton, isBusy && styles.disabledButton]}
-              onPress={handleGoogleLogin}
-              disabled={isBusy || !request}
-              activeOpacity={0.8}
-            >
-              {googleLoading ? (
-                <ActivityIndicator size="small" color={INK} />
-              ) : (
-                <Text style={styles.googleG}>G</Text>
-              )}
-
-              <Text style={styles.googleText}>
-                {googleLoading
-                  ? "Connecting to Google..."
-                  : "Continue with Google"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* GUEST */}
-
-          <TouchableOpacity
-            style={styles.guestButton}
-            onPress={handleGuestLogin}
-            disabled={isBusy}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.guestText}>Continue as guest</Text>
-            <MaterialIcons name="arrow-forward" size={16} color={GREEN} />
-          </TouchableOpacity>
-
-          {/* REGISTER */}
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account?</Text>
-
-            <TouchableOpacity
-              onPress={() => navigation.navigate("Register")}
-              disabled={isBusy}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.register}>Register</Text>
-            </TouchableOpacity>
-          </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -662,9 +713,11 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
     paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 40,
+    paddingTop: 20,
+    paddingBottom: 36,
   },
 
   row: {
@@ -675,40 +728,45 @@ const styles = StyleSheet.create({
   /* HEADER */
 
   header: {
-    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 26,
   },
 
   logoMark: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 72,
+    height: 72,
+    borderRadius: 22,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: BORDER,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: NAVY,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 5,
   },
 
   logoBlue: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: "800",
     color: BLUE,
-    letterSpacing: -1.5,
+    letterSpacing: -2,
   },
 
   logoGreen: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: "800",
     color: GREEN,
-    letterSpacing: -1.5,
+    letterSpacing: -2,
   },
 
   brand: {
-    marginLeft: 12,
-    fontSize: 18,
+    marginTop: 14,
+    fontSize: 21,
+    letterSpacing: -0.3,
   },
 
   brandBlue: {
@@ -722,10 +780,11 @@ const styles = StyleSheet.create({
   },
 
   welcome: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: "800",
     color: NAVY,
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
+    textAlign: "center",
   },
 
   subtitle: {
@@ -734,6 +793,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     color: SLATE,
+    textAlign: "center",
+    paddingHorizontal: 12,
   },
 
   /* FORM */
@@ -742,20 +803,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 26,
+    padding: 22,
     shadowColor: NAVY,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.07,
+    shadowRadius: 22,
+    elevation: 5,
   },
 
   label: {
     color: INK,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
     marginBottom: 8,
+  },
+
+  labelInline: {
+    color: INK,
+    fontSize: 13,
+    fontWeight: "700",
   },
 
   labelRow: {
@@ -766,14 +833,14 @@ const styles = StyleSheet.create({
   },
 
   inputContainer: {
-    height: 52,
+    height: 56,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F8FAFC",
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 16,
+    paddingHorizontal: 15,
     marginBottom: 18,
   },
 
@@ -787,13 +854,13 @@ const styles = StyleSheet.create({
     height: "100%",
     color: INK,
     fontSize: 15,
-    marginLeft: 10,
+    marginLeft: 11,
   },
 
   forgot: {
     color: BLUE,
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 12.5,
+    fontWeight: "700",
   },
 
   resettingText: {
@@ -806,12 +873,17 @@ const styles = StyleSheet.create({
   /* LOGIN */
 
   loginButton: {
-    height: 52,
+    height: 56,
     backgroundColor: BLUE,
-    borderRadius: 14,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 2,
+    marginTop: 4,
+    shadowColor: BLUE,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 6,
   },
 
   disabledButton: {
@@ -820,9 +892,19 @@ const styles = StyleSheet.create({
 
   loginText: {
     color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-    marginLeft: 0,
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  loginTextWithGap: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+    marginLeft: 10,
+  },
+
+  loginArrow: {
+    marginLeft: 8,
   },
 
   /* DIVIDER */
@@ -830,7 +912,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 20,
+    marginVertical: 22,
   },
 
   line: {
@@ -842,33 +924,60 @@ const styles = StyleSheet.create({
   or: {
     color: MUTED,
     fontSize: 12,
+    fontWeight: "600",
     marginHorizontal: 12,
   },
 
   /* GOOGLE */
 
   googleButton: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: "#CBD5E1",
+    height: 56,
+    borderWidth: 1.5,
+    borderColor: BORDER,
     backgroundColor: "#FFFFFF",
-    borderRadius: 14,
+    borderRadius: 16,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
   },
 
+  googleBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   googleG: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "800",
     color: "#4285F4",
   },
 
   googleText: {
     color: INK,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 15,
+    fontWeight: "700",
     marginLeft: 10,
+  },
+
+  /* SECURE NOTE */
+
+  secureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 18,
+  },
+
+  secureText: {
+    color: MUTED,
+    fontSize: 12,
+    marginLeft: 6,
   },
 
   /* GUEST */
@@ -877,14 +986,14 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 22,
+    marginTop: 18,
     paddingVertical: 6,
   },
 
   guestText: {
     color: "#16A34A",
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "700",
     marginRight: 6,
   },
 
@@ -894,18 +1003,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 14,
+    marginTop: 12,
   },
 
   footerText: {
     color: SLATE,
-    fontSize: 13,
+    fontSize: 13.5,
   },
 
   register: {
     color: BLUE,
-    fontWeight: "700",
-    fontSize: 13,
+    fontWeight: "800",
+    fontSize: 13.5,
     marginLeft: 6,
   },
 });

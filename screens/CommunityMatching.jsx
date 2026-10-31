@@ -1,8 +1,6 @@
-
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,6 +8,12 @@ import {
   View,
   Alert,
 } from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -201,6 +205,15 @@ export default function CommunityMatching() {
   const [successMessage, setSuccessMessage] = useState("");
   const [submittingId, setSubmittingId] = useState("");
   const [respondingId, setRespondingId] = useState("");
+
+  /* Space taken by the phone's system buttons / gesture bar.
+     This screen sits inside the bottom tabs, which already handle it,
+     so only add the inset when there is no tab bar. */
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useContext(BottomTabBarHeightContext);
+  const bottomPadding = tabBarHeight
+    ? 28
+    : Math.max(insets.bottom, 8) + 28;
 
   // Listen for authentication changes.
   useEffect(() => {
@@ -486,9 +499,6 @@ export default function CommunityMatching() {
     }
   };
 
-  // Allow the donor to accept or decline a pending interest.
-  // On acceptance, create or reuse a chat and notify the recipient.
-  
   // Allow the donor to accept or decline a pending interest.
   // On acceptance, create the chat and notify the recipient.
   const respondToInterest = async (interest, response) => {
@@ -903,7 +913,11 @@ export default function CommunityMatching() {
 
   if (authLoading) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView
+        style={styles.centered}
+        edges={["top", "bottom", "left", "right"]}
+      >
+        <StatusBar style="dark" />
         <ActivityIndicator size="large" color="#2563EB" />
         <Text style={styles.loadingText}>
           Checking your account...
@@ -914,7 +928,11 @@ export default function CommunityMatching() {
 
   if (!currentUser) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView
+        style={styles.centered}
+        edges={["top", "bottom", "left", "right"]}
+      >
+        <StatusBar style="dark" />
         <MaterialIcons
           name="account-circle"
           size={54}
@@ -929,9 +947,18 @@ export default function CommunityMatching() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      edges={["top", "left", "right"]}
+    >
+      {/* Dark icons (time, battery, wifi, sim) on the light status area */}
+      <StatusBar style="dark" />
+
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: bottomPadding },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.pageTitle}>Community Matching</Text>
@@ -1186,7 +1213,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   pageTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "800",
     color: "#0F172A",
     marginBottom: 6,
@@ -1256,7 +1283,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "800",
     color: "#0F172A",
     marginBottom: 6,

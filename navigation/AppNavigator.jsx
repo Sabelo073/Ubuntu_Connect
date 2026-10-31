@@ -37,6 +37,8 @@ import ReportUser from "../screens/ReportUser";
 import AdminReports from "../screens/AdminReports";
 import UserMap from "../screens/UserMap";
 
+import MyDonations from "../screens/MyDonations";
+import RecipientConfirmations from "../screens/RecipientConfirmation";
 import {
   SessionProvider,
   useSession,
@@ -127,9 +129,9 @@ function NavigationContent() {
         />
 
         <Stack.Screen
-         name="AdminDashboard"
-         component={AdminTabs}
-       />
+          name="AdminDashboard"
+          component={AdminTabs}
+        />
 
         <Stack.Screen
           name="AdminReports"
@@ -159,6 +161,16 @@ function NavigationContent() {
         <Stack.Screen
           name="MyActivity"
           component={MyActivity}
+        />
+
+        <Stack.Screen
+          name="My Donations"
+          component={MyDonations}
+        />
+
+        <Stack.Screen
+          name="Recipient Confirmations"
+          component={RecipientConfirmations}
         />
 
         <Stack.Screen

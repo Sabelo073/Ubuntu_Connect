@@ -1629,7 +1629,7 @@ const styles = StyleSheet.create({
 
   heading: {
     color: "#1E293B",
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: "800",
   },
 

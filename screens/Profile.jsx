@@ -1055,7 +1055,7 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: "800",
     color: "#1E293B",
   },

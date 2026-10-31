@@ -24,27 +24,23 @@ const firebaseConfig = {
   measurementId: "G-9GVWQDKXLG",
 };
 
-
 // Reuse the existing Firebase app if it has already been initialized
 const app = getApps().length === 0
   ? initializeApp(firebaseConfig)
   : getApp();
 
-
 let auth;
 
 try {
   auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
+    persistence: Platform.OS === "web"
+      ? browserLocalPersistence
+      : getReactNativePersistence(AsyncStorage),
   });
 } catch (error) {
-  /*
-    Expo Fast Refresh may run this file again after Firebase Auth
-    has already been initialized. Reuse the existing Auth instance.
-  */
+  // Reuse Auth if it has already been initialized
   auth = getAuth(app);
 }
-
 
 const db = getFirestore(app);
 

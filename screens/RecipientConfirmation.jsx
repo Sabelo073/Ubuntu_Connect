@@ -1,15 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import {
   addDoc,
@@ -23,6 +28,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
+import { useNavigation } from "@react-navigation/native";
 
 function dateTime(value) {
   if (!value) return "Not recorded";
@@ -46,58 +52,66 @@ export default function RecipientConfirmations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [processingId, setProcessingId] = useState(null);
+  const navigation = useNavigation();
 
-  
-useEffect(() => {
-  const user = auth.currentUser;
+  /* Space taken by the phone's system buttons / gesture bar.
+     When this screen sits inside the tab bar, the tab bar already
+     handles it, so only add the inset when there is no tab bar. */
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useContext(BottomTabBarHeightContext);
+  const bottomPadding = tabBarHeight
+    ? 28
+    : Math.max(insets.bottom, 8) + 28;
 
-  if (!user) {
-    setError("Please sign in with the recipient account assigned to the donation.");
-    setLoading(false);
-    return;
-  }
+  useEffect(() => {
+    const user = auth.currentUser;
 
-  console.log("Logged-in recipient UID:", user.uid);
-
-  const recipientQuery = query(
-    collection(db, "donations"),
-    where("recipientId", "==", user.uid)
-  );
-
-  const unsubscribe = onSnapshot(
-    recipientQuery,
-    (snapshot) => {
-      console.log("Matching donations:", snapshot.size);
-
-      const rows = snapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
-
-      console.log("Recipient donations:", rows);
-
-      rows.sort((a, b) => {
-        const dateA = a.collectedAt?.toMillis?.() || 0;
-        const dateB = b.collectedAt?.toMillis?.() || 0;
-        return dateB - dateA;
-      });
-
-      setDonations(rows);
+    if (!user) {
+      setError("Please sign in with the recipient account assigned to the donation.");
       setLoading(false);
-      setError("");
-    },
-    (listenerError) => {
-      console.error("Recipient donation listener error:", listenerError);
-      setError(
-        "Unable to load assigned donations. Check your Firestore rules and try again."
-      );
-      setLoading(false);
+      return;
     }
-  );
 
-  return unsubscribe;
-}, []);
+    console.log("Logged-in recipient UID:", user.uid);
 
+    const recipientQuery = query(
+      collection(db, "donations"),
+      where("recipientId", "==", user.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      recipientQuery,
+      (snapshot) => {
+        console.log("Matching donations:", snapshot.size);
+
+        const rows = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
+        console.log("Recipient donations:", rows);
+
+        rows.sort((a, b) => {
+          const dateA = a.collectedAt?.toMillis?.() || 0;
+          const dateB = b.collectedAt?.toMillis?.() || 0;
+          return dateB - dateA;
+        });
+
+        setDonations(rows);
+        setLoading(false);
+        setError("");
+      },
+      (listenerError) => {
+        console.error("Recipient donation listener error:", listenerError);
+        setError(
+          "Unable to load assigned donations. Check your Firestore rules and try again."
+        );
+        setLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
 
   const completeReceipt = async (donation) => {
     const user = auth.currentUser;
@@ -110,68 +124,66 @@ useEffect(() => {
       return;
     }
 
-    
-const proceed = async () => {
-  setProcessingId(donation.id);
+    const proceed = async () => {
+      setProcessingId(donation.id);
 
-  try {
-    // Step 1: Confirm receipt on the donation document.
-    await updateDoc(doc(db, "donations", donation.id), {
-      status: "Completed",
-      receivedAt: serverTimestamp(),
-      receivedConfirmedBy: user.uid,
-      verificationStatus: "Verified",
-      statusUpdatedAt: serverTimestamp(),
-      statusHistory: arrayUnion({
-        previousStatus: "Collected",
-        newStatus: "Completed",
-        changedBy: user.uid,
-        changedAt: new Date(),
-        note: "Receipt confirmed by the assigned recipient in the app.",
-      }),
-    });
-
-    // Step 2: Create a notification separately.
-    if (donation.userId) {
       try {
-        await addDoc(collection(db, "notifications"), {
-          userId: donation.userId,
-          title: "Donation received",
-          message: `The recipient confirmed receiving your donation "${donation.itemName || "donation"}".`,
-          type: "donation",
-          read: false,
-          createdAt: serverTimestamp(),
+        // Step 1: Confirm receipt on the donation document.
+        await updateDoc(doc(db, "donations", donation.id), {
+          status: "Completed",
+          receivedAt: serverTimestamp(),
+          receivedConfirmedBy: user.uid,
+          verificationStatus: "Verified",
+          statusUpdatedAt: serverTimestamp(),
+          statusHistory: arrayUnion({
+            previousStatus: "Collected",
+            newStatus: "Completed",
+            changedBy: user.uid,
+            changedAt: new Date(),
+            note: "Receipt confirmed by the assigned recipient in the app.",
+          }),
         });
-      } catch (notificationError) {
-        console.error(
-          "Receipt saved, but notification failed:",
-          notificationError.code,
-          notificationError.message
+
+        // Step 2: Create a notification separately.
+        if (donation.userId) {
+          try {
+            await addDoc(collection(db, "notifications"), {
+              userId: donation.userId,
+              title: "Donation received",
+              message: `The recipient confirmed receiving your donation "${donation.itemName || "donation"}".`,
+              type: "donation",
+              read: false,
+              createdAt: serverTimestamp(),
+            });
+          } catch (notificationError) {
+            console.error(
+              "Receipt saved, but notification failed:",
+              notificationError.code,
+              notificationError.message
+            );
+          }
+        }
+
+        // The donation update succeeded.
+        Alert.alert(
+          "Receipt confirmed",
+          "Thank you. The donation is now marked Completed."
         );
+      } catch (updateError) {
+        console.error(
+          "Receipt confirmation failed:",
+          updateError.code,
+          updateError.message
+        );
+
+        Alert.alert(
+          "Could not confirm receipt",
+          `${updateError.code || "Error"}: ${updateError.message || "Please try again."}`
+        );
+      } finally {
+        setProcessingId(null);
       }
-    }
-
-    // The donation update succeeded.
-    Alert.alert(
-      "Receipt confirmed",
-      "Thank you. The donation is now marked Completed."
-    );
-  } catch (updateError) {
-    console.error(
-      "Receipt confirmation failed:",
-      updateError.code,
-      updateError.message
-    );
-
-    Alert.alert(
-      "Could not confirm receipt",
-      `${updateError.code || "Error"}: ${updateError.message || "Please try again."}`
-    );
-  } finally {
-    setProcessingId(null);
-  }
-};
-
+    };
 
     const message = `Confirm that you have actually received "${donation.itemName || "this donation"}"? Only confirm if the item is in your possession.`;
     if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -185,8 +197,32 @@ const proceed = async () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={["top", "left", "right"]}
+    >
+      <TouchableOpacity
+  onPress={() => navigation.navigate("MyActivity")}
+  style={{
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  }}
+>
+  <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+    ← Back to My Activity
+  </Text>
+</TouchableOpacity>
+      {/* Dark icons (time, battery, wifi, sim) on the light status area */}
+      <StatusBar style="dark" />
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: bottomPadding },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Recipient Confirmations</Text>
@@ -265,7 +301,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#F8FAFC" },
   content: { padding: 18, paddingBottom: 35 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18 },
-  title: { fontSize: 25, fontWeight: "800", color: "#0F172A" },
+  title: { fontSize: 22, fontWeight: "800", color: "#0F172A" },
   subtitle: { color: "#64748B", fontSize: 13, lineHeight: 19, marginTop: 5 },
   notice: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: "#DBEAFE", borderRadius: 13, padding: 13, marginBottom: 18 },
   noticeText: { flex: 1, color: "#1E40AF", fontSize: 12, lineHeight: 18 },

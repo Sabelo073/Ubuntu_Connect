@@ -21,6 +21,8 @@ import {
   where,
   orderBy,
   onSnapshot,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 
 import { auth, db } from "../firebaseConfig";
@@ -39,9 +41,7 @@ const Messages = ({ navigation }) => {
   const getOtherParticipant = (chat) => {
     const currentUserId = auth.currentUser?.uid;
 
-    const participantIds = Array.isArray(
-      chat?.participantIds
-    )
+    const participantIds = Array.isArray(chat?.participantIds)
       ? chat.participantIds
       : [];
 
@@ -53,11 +53,11 @@ const Messages = ({ navigation }) => {
 
     const otherUserId =
       participantIds.find(
-        (participantId) =>
-          participantId !== currentUserId
+        (participantId) => participantId !== currentUserId
       ) || "";
 
     const otherUserName =
+      chat?.resolvedOtherUserName ||
       participantNames[otherUserId] ||
       chat?.organizationName ||
       "Ubuntu Connect User";
@@ -172,15 +172,61 @@ const Messages = ({ navigation }) => {
     const unsubscribe = onSnapshot(
       chatsQuery,
 
-      (snapshot) => {
-        const chatList = snapshot.docs.map(
-          (document) => ({
-            id: document.id,
-            ...document.data(),
+      async (snapshot) => {
+        const chatList = snapshot.docs.map((document) => ({
+          id: document.id,
+          ...document.data(),
+        }));
+
+        // Resolve participant names before rendering the chat list.
+        const chatsWithNames = await Promise.all(
+          chatList.map(async (chat) => {
+            const participantIds = Array.isArray(chat.participantIds)
+              ? chat.participantIds
+              : [];
+
+            const otherUserId =
+              participantIds.find(
+                (participantId) => participantId !== user.uid
+              ) || "";
+
+            const participantNames =
+              chat.participantNames &&
+              typeof chat.participantNames === "object"
+                ? chat.participantNames
+                : {};
+
+            let otherUserName =
+              participantNames[otherUserId] ||
+              chat.organizationName ||
+              "";
+
+            if (!otherUserName && otherUserId) {
+              try {
+                const userRef = doc(db, "users", otherUserId);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists()) {
+                  const userData = userSnap.data();
+                  otherUserName = userData.email || "";
+                }
+              } catch (error) {
+                console.error(
+                  "Error fetching participant email:",
+                  error
+                );
+              }
+            }
+
+            return {
+              ...chat,
+              resolvedOtherUserName:
+                otherUserName || "Ubuntu Connect User",
+            };
           })
         );
 
-        setChats(chatList);
+        setChats(chatsWithNames);
         setLoading(false);
       },
 
@@ -687,7 +733,7 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 29,
+    fontSize: 22,
     fontWeight: "800",
     color: "#1E293B",
   },

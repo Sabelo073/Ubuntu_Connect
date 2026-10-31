@@ -1045,7 +1045,7 @@ const styles = StyleSheet.create({
 
   heading: {
     color: "#1E293B",
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: "800",
     letterSpacing: -0.5,
   },

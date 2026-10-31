@@ -1,5 +1,4 @@
-
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -11,8 +10,13 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
 } from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import {
   collection,
@@ -21,6 +25,8 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "../firebaseConfig";
+
+import { useNavigation } from "@react-navigation/native";
 
 const FILTERS = [
   "All",
@@ -192,6 +198,8 @@ function DonationTimeline({ status }) {
                 )}
               </View>
 
+              
+
               {index < TIMELINE_STEPS.length - 1 ? (
                 <View
                   style={[
@@ -280,6 +288,17 @@ export default function MyDonations() {
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDonation, setSelectedDonation] = useState(null);
+
+  const navigation = useNavigation();
+
+  /* Space taken by the phone's system buttons / gesture bar.
+     When this screen sits inside the tab bar, the tab bar already
+     handles it, so only add the inset when there is no tab bar. */
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useContext(BottomTabBarHeightContext);
+  const bottomPadding = tabBarHeight
+    ? 28
+    : Math.max(insets.bottom, 8) + 28;
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -394,10 +413,33 @@ export default function MyDonations() {
     : null;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    
+    <SafeAreaView
+    
+      style={styles.safeArea}
+      edges={["top", "left", "right"]}
+    >
+      <TouchableOpacity
+  onPress={() => navigation.navigate("Home")}
+  style={{
+    padding: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  }}
+>
+  <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+    ← Back to My Activity
+  </Text>
+</TouchableOpacity>
+      {/* Dark icons (time, battery, wifi, sim) on the light status area */}
+      <StatusBar style="dark" />
+
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: bottomPadding },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -652,9 +694,13 @@ export default function MyDonations() {
         visible={!!selectedDonation}
         animationType="slide"
         presentationStyle="pageSheet"
+        statusBarTranslucent
         onRequestClose={closeDetails}
       >
-        <SafeAreaView style={styles.modalSafeArea}>
+        <SafeAreaView
+          style={styles.modalSafeArea}
+          edges={["top", "bottom", "left", "right"]}
+        >
           <View style={styles.modalHeader}>
             <Text style={styles.modalHeading}>Donation Details</Text>
             <TouchableOpacity
@@ -783,7 +829,7 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   heading: {
-    fontSize: 27,
+    fontSize: 22,
     fontWeight: "800",
     color: "#0F172A",
   },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import {
   ScrollView,
@@ -11,7 +11,12 @@ import {
   Platform,
 } from "react-native";
 
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import {
@@ -26,6 +31,15 @@ import { db } from "../firebaseConfig";
 const Campaigns = ({ navigation }) => {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  /* Space taken by the phone's system buttons / gesture bar.
+     When this screen is a tab, the tab bar already handles it,
+     so only add the inset when there is no tab bar. */
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useContext(BottomTabBarHeightContext);
+  const bottomPadding = tabBarHeight
+    ? 24
+    : Math.max(insets.bottom, 8) + 24;
 
   const showError = (title, message) => {
     if (
@@ -209,7 +223,12 @@ const Campaigns = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView
+        style={styles.loadingContainer}
+        edges={["top", "bottom", "left", "right"]}
+      >
+        <StatusBar style="dark" />
+
         <View style={styles.loadingIconContainer}>
           <MaterialIcons
             name="campaign"
@@ -236,9 +255,15 @@ const Campaigns = ({ navigation }) => {
       style={styles.container}
       edges={["top", "left", "right"]}
     >
+      {/* Dark icons (time, battery, wifi, sim) on the light status area */}
+      <StatusBar style="dark" />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: bottomPadding },
+        ]}
       >
 
         {/* Header */}
@@ -604,8 +629,6 @@ const Campaigns = ({ navigation }) => {
             );
           })
         )}
-
-        <View style={{ height: 70 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -677,7 +700,7 @@ const styles = StyleSheet.create({
   },
 
   heading: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "800",
     color: "#1E293B",
   },
