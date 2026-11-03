@@ -55,7 +55,6 @@ export default function MyActivity({
           }}
         >
           <Text style={{ fontSize: 16, fontWeight: "bold" }}>
-            ← Back 
           </Text>
         </TouchableOpacity>
         <Text style={styles.heading}>My Activity</Text>
